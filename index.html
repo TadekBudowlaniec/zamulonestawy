@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trenerzy Personalni - Instagram</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #fafafa; color: #262626; }
+
+.header {
+  background: linear-gradient(135deg, #833AB4, #E1306C, #F77737);
+  color: white; padding: 24px 20px; text-align: center;
+}
+.header h1 { font-size: 24px; margin-bottom: 6px; }
+.header .stats { font-size: 14px; opacity: 0.9; }
+
+.controls {
+  background: white; padding: 12px 20px; border-bottom: 1px solid #dbdbdb;
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 10;
+}
+.controls input[type="text"] {
+  padding: 8px 12px; border: 1px solid #dbdbdb; border-radius: 6px;
+  font-size: 14px; flex: 1; min-width: 180px;
+}
+.controls select {
+  padding: 8px 12px; border: 1px solid #dbdbdb; border-radius: 6px;
+  font-size: 14px; background: white;
+}
+.controls .filter-info {
+  font-size: 13px; color: #8e8e8e;
+}
+.btn {
+  padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px;
+  cursor: pointer; font-weight: 600;
+}
+.btn-pink { background: #E1306C; color: white; }
+.btn-pink:hover { background: #c91358; }
+.btn-gray { background: #efefef; color: #262626; }
+.btn-gray:hover { background: #dbdbdb; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 16px; }
+
+.profile-card {
+  background: white; border: 1px solid #dbdbdb; border-radius: 8px;
+  padding: 14px 16px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 14px;
+  transition: background 0.15s;
+}
+.profile-card:hover { background: #fafafa; }
+.profile-card.contacted { background: #f0fff0; border-color: #b7e1b7; }
+
+.profile-card input[type="checkbox"] {
+  width: 20px; height: 20px; cursor: pointer; accent-color: #E1306C;
+  flex-shrink: 0;
+}
+
+.profile-num {
+  font-size: 12px; color: #8e8e8e; width: 28px; text-align: center; flex-shrink: 0;
+}
+
+.profile-info { flex: 1; min-width: 0; }
+.profile-username {
+  font-weight: 600; font-size: 15px; margin-bottom: 2px;
+}
+.profile-username a { color: #E1306C; text-decoration: none; }
+.profile-username a:hover { text-decoration: underline; }
+.profile-meta { font-size: 13px; color: #8e8e8e; }
+
+.profile-actions { flex-shrink: 0; }
+
+.badge-contacted {
+  font-size: 11px; background: #4caf50; color: white; padding: 3px 8px;
+  border-radius: 10px; font-weight: 600; display: none;
+}
+.profile-card.contacted .badge-contacted { display: inline-block; }
+
+.empty { text-align: center; padding: 40px; color: #8e8e8e; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Trenerzy Personalni - Instagram</h1>
+  <div class="stats">
+    <span id="totalCount">63</span> profili |
+    Napisano: <span id="contactedCount">0</span> |
+    Pozostało: <span id="remainingCount">63</span>
+  </div>
+</div>
+
+<div class="controls">
+  <input type="text" id="searchInput" placeholder="Szukaj username lub miasto...">
+  <select id="regionFilter">
+    <option value="">Wszystkie województwa</option>
+  </select>
+  <select id="statusFilter">
+    <option value="">Wszystkie</option>
+    <option value="pending">Nieodpisane</option>
+    <option value="contacted">Napisano</option>
+  </select>
+  <button class="btn btn-gray" onclick="uncheckAll()">Odznacz wszystko</button>
+  <span class="filter-info" id="filterInfo"></span>
+</div>
+
+<div class="container" id="profileList"></div>
+
+<script>
+const PROFILES = [
+  {"username":"lesnicki.jacek","url":"https://www.instagram.com/lesnicki.jacek/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"jagodaoses","url":"https://www.instagram.com/jagodaoses/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"wozniak_trenerka","url":"https://www.instagram.com/wozniak_trenerka/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"klotrener","url":"https://www.instagram.com/klotrener/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"manufaktura_sily","url":"https://www.instagram.com/manufaktura_sily/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"lifthouseswidnica","url":"https://www.instagram.com/lifthouseswidnica/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"biszkopt_gym","url":"https://www.instagram.com/biszkopt_gym/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"box74pl","url":"https://www.instagram.com/box74pl/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"popular","url":"https://www.instagram.com/popular/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"labonitafitklubswidnica","url":"https://www.instagram.com/labonitafitklubswidnica/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"angelika.mazij","url":"https://www.instagram.com/angelika.mazij/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"droga.do.ciala.z.konarska","url":"https://www.instagram.com/droga.do.ciala.z.konarska/","city":"Świdnica","region":"Dolnośląskie"},
+  {"username":"katarzynakusmierz_","url":"https://www.instagram.com/katarzynakusmierz_/","city":"Suwałki","region":"Podlaskie"},
+  {"username":"joanna.zofiaa","url":"https://www.instagram.com/joanna.zofiaa/","city":"Suwałki","region":"Podlaskie"},
+  {"username":"mr.baboon_coach","url":"https://www.instagram.com/mr.baboon_coach/","city":"Suwałki","region":"Podlaskie"},
+  {"username":"filip.kozuchowski","url":"https://www.instagram.com/filip.kozuchowski/","city":"Suwałki","region":"Podlaskie"},
+  {"username":"mg_womens_zone","url":"https://www.instagram.com/mg_womens_zone/","city":"Suwałki","region":"Podlaskie"},
+  {"username":"maciejborkowski_","url":"https://www.instagram.com/maciejborkowski_/","city":"Suwałki","region":"Podlaskie"},
+  {"username":"personalnymilosz","url":"https://www.instagram.com/personalnymilosz/","city":"Nowy Sącz","region":"Małopolskie"},
+  {"username":"adam_racon","url":"https://www.instagram.com/adam_racon/","city":"Nowy Sącz","region":"Małopolskie"},
+  {"username":"fit_genetyk","url":"https://www.instagram.com/fit_genetyk/","city":"Nowy Sącz","region":"Małopolskie"},
+  {"username":"better_move_","url":"https://www.instagram.com/better_move_/","city":"Nowy Sącz","region":"Małopolskie"},
+  {"username":"piotrpasionekfitness","url":"https://www.instagram.com/piotrpasionekfitness/","city":"Nowy Sącz","region":"Małopolskie"},
+  {"username":"lukaszwasko_trenerpersonalny","url":"https://www.instagram.com/lukaszwasko_trenerpersonalny/","city":"Nowy Sącz","region":"Małopolskie"},
+  {"username":"aleksandra_rybczynska_","url":"https://www.instagram.com/aleksandra_rybczynska_/","city":"Frampol","region":"Lubelskie"},
+  {"username":"trenermonika","url":"https://www.instagram.com/trenermonika/","city":"Brzesko","region":"Małopolskie"},
+  {"username":"ernest.serwatka","url":"https://www.instagram.com/ernest.serwatka/","city":"Brzesko","region":"Małopolskie"},
+  {"username":"fit_expert_dietetyka_trening","url":"https://www.instagram.com/fit_expert_dietetyka_trening/","city":"Brzesko","region":"Małopolskie"},
+  {"username":"monika_gymlifterka","url":"https://www.instagram.com/monika_gymlifterka/","city":"Brzesko","region":"Małopolskie"},
+  {"username":"fizjoofitness","url":"https://www.instagram.com/fizjoofitness/","city":"Brzesko","region":"Małopolskie"},
+  {"username":"sztosfit","url":"https://www.instagram.com/sztosfit/","city":"Brzesko","region":"Małopolskie"},
+  {"username":"xfg_brzeskoodyseja","url":"https://www.instagram.com/xfg_brzeskoodyseja/","city":"Brzesko","region":"Małopolskie"},
+  {"username":"greszek5671","url":"https://www.instagram.com/greszek5671/","city":"Brzesko","region":"Małopolskie"},
+  {"username":"xfg_brzesko","url":"https://www.instagram.com/xfg_brzesko/","city":"Brzesko","region":"Małopolskie"},
+  {"username":"seo","url":"https://www.instagram.com/seo/","city":"Brzesko","region":"Małopolskie"},
+  {"username":"michal.jeruc","url":"https://www.instagram.com/michal.jeruc/","city":"Braniewo","region":"Warmińsko-Mazurskie"},
+  {"username":"maximusbraniewo","url":"https://www.instagram.com/maximusbraniewo/","city":"Braniewo","region":"Warmińsko-Mazurskie"},
+  {"username":"trener_personalny_ela_ritmo","url":"https://www.instagram.com/trener_personalny_ela_ritmo/","city":"Krosno Odrzańskie","region":"Lubuskie"},
+  {"username":"rckikzielonagora","url":"https://www.instagram.com/rckikzielonagora/","city":"Krosno Odrzańskie","region":"Lubuskie"},
+  {"username":"luksusowe.fotografie","url":"https://www.instagram.com/luksusowe.fotografie/","city":"Krosno Odrzańskie","region":"Lubuskie"},
+  {"username":"xfg_dabrowatarnowska","url":"https://www.instagram.com/xfg_dabrowatarnowska/","city":"Dąbrowa Tarnowska","region":"Małopolskie"},
+  {"username":"erykkozlowski.trener","url":"https://www.instagram.com/erykkozlowski.trener/","city":"Dąbrowa Tarnowska","region":"Małopolskie"},
+  {"username":"wengral","url":"https://www.instagram.com/wengral/","city":"Dąbrowa Tarnowska","region":"Małopolskie"},
+  {"username":"lukasz__morawiec","url":"https://www.instagram.com/lukasz__morawiec/","city":"Dąbrowa Tarnowska","region":"Małopolskie"},
+  {"username":"z_zycia_dietetyka","url":"https://www.instagram.com/z_zycia_dietetyka/","city":"Dąbrowa Tarnowska","region":"Małopolskie"},
+  {"username":"zaleska_agata","url":"https://www.instagram.com/zaleska_agata/","city":"Raciąż","region":"Mazowieckie"},
+  {"username":"osiedlowa_liga","url":"https://www.instagram.com/osiedlowa_liga/","city":"Raciąż","region":"Mazowieckie"},
+  {"username":"kr_awczuk","url":"https://www.instagram.com/kr_awczuk/","city":"Raciąż","region":"Mazowieckie"},
+  {"username":"atusznio","url":"https://www.instagram.com/atusznio/","city":"Tarnobrzeg","region":"Podkarpackie"},
+  {"username":"jakub.majka","url":"https://www.instagram.com/jakub.majka/","city":"Tarnobrzeg","region":"Podkarpackie"},
+  {"username":"xfg_tarnobrzegwarszawska","url":"https://www.instagram.com/xfg_tarnobrzegwarszawska/","city":"Tarnobrzeg","region":"Podkarpackie"},
+  {"username":"zrob_forme_kamil_mroczek","url":"https://www.instagram.com/zrob_forme_kamil_mroczek/","city":"Tarnobrzeg","region":"Podkarpackie"},
+  {"username":"daniel.malec.87","url":"https://www.instagram.com/daniel.malec.87/","city":"Tarnobrzeg","region":"Podkarpackie"},
+  {"username":"paqernia_gym_fitness","url":"https://www.instagram.com/paqernia_gym_fitness/","city":"Tarnobrzeg","region":"Podkarpackie"},
+  {"username":"rafal.domanski_","url":"https://www.instagram.com/rafal.domanski_/","city":"Tarnobrzeg","region":"Podkarpackie"},
+  {"username":"kasia.kurek7","url":"https://www.instagram.com/kasia.kurek7/","city":"Budzyń","region":"Wielkopolskie"},
+  {"username":"up.movementt","url":"https://www.instagram.com/up.movementt/","city":"Krzyż Wielkopolski","region":"Wielkopolskie"},
+  {"username":"maciejszoka","url":"https://www.instagram.com/maciejszoka/","city":"Lwówek Śląski","region":"Dolnośląskie"},
+  {"username":"michal_kostrzewaa","url":"https://www.instagram.com/michal_kostrzewaa/","city":"Lwówek Śląski","region":"Dolnośląskie"},
+  {"username":"fit4you_catering","url":"https://www.instagram.com/fit4you_catering/","city":"Lwówek Śląski","region":"Dolnośląskie"},
+  {"username":"kubacyka","url":"https://www.instagram.com/kubacyka/","city":"Tuszyn","region":"Łódzkie"},
+  {"username":"trenujzmikasem","url":"https://www.instagram.com/trenujzmikasem/","city":"Tuszyn","region":"Łódzkie"},
+  {"username":"szariat_bojowy","url":"https://www.instagram.com/szariat_bojowy/","city":"Tuszyn","region":"Łódzkie"}
+];
+
+const STORAGE_KEY = 'ig_contacted';
+
+function getContacted() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveContacted(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function toggleContacted(username) {
+  const data = getContacted();
+  if (data[username]) delete data[username];
+  else data[username] = Date.now();
+  saveContacted(data);
+  render();
+}
+
+function uncheckAll() {
+  if (confirm('Odznacz wszystkie? Stracisz informację o wysłanych wiadomościach.')) {
+    localStorage.removeItem(STORAGE_KEY);
+    render();
+  }
+}
+
+function render() {
+  const contacted = getContacted();
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const region = document.getElementById('regionFilter').value;
+  const status = document.getElementById('statusFilter').value;
+
+  const filtered = PROFILES.filter(p => {
+    if (search && !p.username.includes(search) && !p.city.toLowerCase().includes(search)) return false;
+    if (region && p.region !== region) return false;
+    if (status === 'contacted' && !contacted[p.username]) return false;
+    if (status === 'pending' && contacted[p.username]) return false;
+    return true;
+  });
+
+  const contactedCount = Object.keys(contacted).length;
+  document.getElementById('contactedCount').textContent = contactedCount;
+  document.getElementById('remainingCount').textContent = PROFILES.length - contactedCount;
+  document.getElementById('filterInfo').textContent = filtered.length < PROFILES.length
+    ? `Pokazano ${filtered.length} z ${PROFILES.length}` : '';
+
+  const list = document.getElementById('profileList');
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty">Brak profili pasujących do filtrów</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map((p, i) => {
+    const isContacted = !!contacted[p.username];
+    return `
+    <div class="profile-card ${isContacted ? 'contacted' : ''}" id="card-${p.username}">
+      <input type="checkbox" ${isContacted ? 'checked' : ''}
+             onchange="toggleContacted('${p.username}')"
+             title="Zaznacz jeśli napisałeś">
+      <span class="profile-num">${i + 1}</span>
+      <div class="profile-info">
+        <div class="profile-username">
+          <a href="${p.url}" target="_blank">@${p.username}</a>
+        </div>
+        <div class="profile-meta">${p.city} &middot; ${p.region}</div>
+      </div>
+      <span class="badge-contacted">Napisano</span>
+      <a href="${p.url}" target="_blank" class="btn btn-pink">Otwórz IG</a>
+    </div>`;
+  }).join('');
+}
+
+// Wypełnij dropdown województw
+const regions = [...new Set(PROFILES.map(p => p.region))].sort();
+const select = document.getElementById('regionFilter');
+regions.forEach(r => {
+  const opt = document.createElement('option');
+  opt.value = r; opt.textContent = r;
+  select.appendChild(opt);
+});
+
+// Event listenery
+document.getElementById('searchInput').addEventListener('input', render);
+document.getElementById('regionFilter').addEventListener('change', render);
+document.getElementById('statusFilter').addEventListener('change', render);
+
+render();
+</script>
+</body>
+</html>

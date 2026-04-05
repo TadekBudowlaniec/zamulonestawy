@@ -131,9 +131,10 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
 
 <div class="login-bar" id="loginBar">
   <span>Zaloguj sie:</span>
-  <input type="text" id="loginInput" placeholder="Twoje imie / nick">
-  <button class="btn btn-pink" onclick="login()">Zaloguj</button>
-  <span id="loginStatus"></span>
+  <button class="btn btn-pink" onclick="login('Alonso')">Alonso</button>
+  <button class="btn btn-pink" onclick="login('Haku')">Haku</button>
+  <button class="btn btn-pink" onclick="login('Fred')">Fred</button>
+  <button class="btn btn-pink" onclick="login('Ted')">Ted</button>
 </div>
 
 <div class="sync-bar" id="syncBar">
@@ -1258,11 +1259,8 @@ function getCurrentUser() {
   return localStorage.getItem(USER_KEY) || '';
 }
 
-function login() {
-  const name = document.getElementById('loginInput').value.trim();
-  if (!name) { alert('Wpisz imie lub nick!'); return; }
+function login(name) {
   localStorage.setItem(USER_KEY, name);
-  document.getElementById('loginInput').value = '';
   updateLoginUI();
 }
 
@@ -1277,12 +1275,11 @@ function updateLoginUI() {
   if (user) {
     bar.innerHTML = `<span>Zalogowany jako:</span> <span class="user-badge">${user}</span> <button class="btn btn-gray" onclick="logout()">Wyloguj</button>`;
   } else {
-    bar.innerHTML = `<span>Zaloguj sie:</span> <input type="text" id="loginInput" placeholder="Twoje imie / nick"> <button class="btn btn-pink" onclick="login()">Zaloguj</button>`;
-    // Enter w polu logowania
-    setTimeout(() => {
-      const inp = document.getElementById('loginInput');
-      if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
-    }, 0);
+    bar.innerHTML = `<span>Zaloguj sie:</span>
+      <button class="btn btn-pink" onclick="login('Alonso')">Alonso</button>
+      <button class="btn btn-pink" onclick="login('Haku')">Haku</button>
+      <button class="btn btn-pink" onclick="login('Fred')">Fred</button>
+      <button class="btn btn-pink" onclick="login('Ted')">Ted</button>`;
   }
 }
 

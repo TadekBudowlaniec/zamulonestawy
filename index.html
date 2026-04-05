@@ -70,24 +70,11 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
 
 .empty { text-align: center; padding: 40px; color: #8e8e8e; }
 
-.pagination {
-  display: flex; justify-content: center; align-items: center; gap: 8px;
-  padding: 16px; flex-wrap: wrap;
-}
-.pagination button {
-  padding: 8px 14px; border: 1px solid #dbdbdb; border-radius: 6px;
-  background: white; cursor: pointer; font-size: 14px; font-weight: 500;
-}
-.pagination button:hover { background: #f0f0f0; }
-.pagination button.active { background: #E1306C; color: white; border-color: #E1306C; }
-.pagination button:disabled { opacity: 0.4; cursor: default; }
-.pagination .page-info { font-size: 13px; color: #8e8e8e; }
-
 .scroll-top {
   position: fixed; bottom: 20px; right: 20px; width: 44px; height: 44px;
   border-radius: 50%; background: #E1306C; color: white; border: none;
   font-size: 20px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.2);
-  display: none; z-index: 20;
+  z-index: 20;
 }
 .scroll-top:hover { background: #c91358; }
 
@@ -188,8 +175,7 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
 </div>
 
 <div class="container" id="profileList"></div>
-<div class="pagination" id="pagination"></div>
-<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<button class="scroll-top" id="scrollTop" onclick="scrollToNextUnchecked()" title="Nastepny niezaznaczony">↓</button>
 
 <script>
 const PROFILES = [
@@ -1320,7 +1306,7 @@ function toggleContacted(username) {
   if (data[username]) delete data[username];
   else data[username] = { by: user, at: Date.now() };
   saveLocal(data);
-  renderPage();
+  render(false);
   const contactedCount = Object.keys(data).length;
   document.getElementById('contactedCount').textContent = contactedCount;
   document.getElementById('remainingCount').textContent = PROFILES.length - contactedCount;
@@ -1337,17 +1323,9 @@ function uncheckAll() {
 
 // ─── RENDER ──────────────────────────────────────────────────────────────────
 
-const PER_PAGE = 50;
-let currentPage = 1;
 let lastFiltered = [];
 
-function goToPage(page) {
-  currentPage = page;
-  renderPage();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function render() {
+function render(scrollToFirst) {
   const contacted = getContacted();
   const search = document.getElementById('searchInput').value.toLowerCase();
   const region = document.getElementById('regionFilter').value;
@@ -1367,33 +1345,23 @@ function render() {
   document.getElementById('filterInfo').textContent = lastFiltered.length < PROFILES.length
     ? `Pokazano ${lastFiltered.length} z ${PROFILES.length}` : '';
 
-  currentPage = 1;
-  renderPage();
-}
-
-function renderPage() {
-  const contacted = getContacted();
-  const filtered = lastFiltered;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  if (currentPage > totalPages) currentPage = totalPages;
-
-  const start = (currentPage - 1) * PER_PAGE;
-  const pageItems = filtered.slice(start, start + PER_PAGE);
-
   const list = document.getElementById('profileList');
-  if (filtered.length === 0) {
+  if (lastFiltered.length === 0) {
     list.innerHTML = '<div class="empty">Brak profili pasujacych do filtrow</div>';
-    document.getElementById('pagination').innerHTML = '';
     return;
   }
 
-  list.innerHTML = pageItems.map((p, i) => {
-    const num = start + i + 1;
+  let firstUncheckedId = null;
+
+  list.innerHTML = lastFiltered.map((p, i) => {
+    const num = i + 1;
     const entry = contacted[p.username];
     const isContacted = !!entry;
     const byText = (entry && entry.by) ? entry.by : '';
+    const cardId = `card-${i}`;
+    if (!isContacted && !firstUncheckedId) firstUncheckedId = cardId;
     return `
-    <div class="profile-card ${isContacted ? 'contacted' : ''}">
+    <div class="profile-card ${isContacted ? 'contacted' : ''}" id="${cardId}">
       <input type="checkbox" ${isContacted ? 'checked' : ''}
              onchange="toggleContacted('${p.username}')"
              title="Zaznacz jesli napisales">
@@ -1409,31 +1377,25 @@ function renderPage() {
     </div>`;
   }).join('');
 
-  // Paginacja
-  let pagHtml = '';
-  pagHtml += `<button onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>`;
-  pagHtml += `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&lsaquo; Poprzednia</button>`;
-
-  // Numery stron - max 7 widocznych
-  let startP = Math.max(1, currentPage - 3);
-  let endP = Math.min(totalPages, startP + 6);
-  if (endP - startP < 6) startP = Math.max(1, endP - 6);
-
-  for (let i = startP; i <= endP; i++) {
-    pagHtml += `<button onclick="goToPage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+  // Scrolluj do pierwszego niezaznaczonego
+  if (scrollToFirst && firstUncheckedId) {
+    setTimeout(() => {
+      const el = document.getElementById(firstUncheckedId);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
   }
-
-  pagHtml += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}">Nastepna &rsaquo;</button>`;
-  pagHtml += `<button onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}">&raquo;</button>`;
-  pagHtml += `<span class="page-info">${start + 1}-${Math.min(start + PER_PAGE, filtered.length)} z ${filtered.length}</span>`;
-
-  document.getElementById('pagination').innerHTML = pagHtml;
 }
 
-// Przycisk scroll-to-top
-window.addEventListener('scroll', () => {
-  document.getElementById('scrollTop').style.display = window.scrollY > 300 ? 'block' : 'none';
-});
+function scrollToNextUnchecked() {
+  const contacted = getContacted();
+  for (let i = 0; i < lastFiltered.length; i++) {
+    if (!contacted[lastFiltered[i].username]) {
+      const el = document.getElementById(`card-${i}`);
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    }
+  }
+}
+
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 
@@ -1451,7 +1413,7 @@ document.getElementById('statusFilter').addEventListener('change', render);
 
 // Przy starcie
 updateLoginUI();
-render();
+render(true);
 if (getToken()) {
   document.getElementById('tokenInput').placeholder = 'Token zapisany';
   syncFromGithub();

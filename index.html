@@ -91,12 +91,32 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
 }
 .scroll-top:hover { background: #c91358; }
 
-.login-bar {
-  background: #e8f4fd; padding: 10px 20px; border-bottom: 1px solid #b3d9f2;
-  display: flex; align-items: center; gap: 10px; font-size: 13px;
+.login-screen {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(135deg, #833AB4, #E1306C, #F77737);
+  display: flex; justify-content: center; align-items: center; z-index: 100;
 }
-.login-bar input[type="text"] {
-  padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 180px;
+.login-box {
+  background: white; border-radius: 16px; padding: 40px 50px; text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,.2);
+}
+.login-box h2 { font-size: 22px; margin-bottom: 8px; color: #262626; }
+.login-box p { font-size: 14px; color: #8e8e8e; margin-bottom: 24px; }
+.login-box .login-buttons { display: flex; flex-direction: column; gap: 10px; }
+.login-box .login-btn {
+  padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px;
+  font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.15s;
+}
+.login-box .login-btn:hover { transform: scale(1.03); }
+.login-box .login-btn:active { transform: scale(0.98); }
+.login-btn.alonso { background: #E1306C; color: white; }
+.login-btn.haku { background: #833AB4; color: white; }
+.login-btn.fred { background: #F77737; color: white; }
+.login-btn.ted { background: #405DE6; color: white; }
+
+.login-bar {
+  background: #e8f4fd; padding: 8px 20px; border-bottom: 1px solid #b3d9f2;
+  display: flex; align-items: center; gap: 10px; font-size: 13px;
 }
 .login-bar .user-badge {
   background: #E1306C; color: white; padding: 4px 12px; border-radius: 12px;
@@ -129,13 +149,20 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
   </div>
 </div>
 
-<div class="login-bar" id="loginBar">
-  <span>Zaloguj sie:</span>
-  <button class="btn btn-pink" onclick="login('Alonso')">Alonso</button>
-  <button class="btn btn-pink" onclick="login('Haku')">Haku</button>
-  <button class="btn btn-pink" onclick="login('Fred')">Fred</button>
-  <button class="btn btn-pink" onclick="login('Ted')">Ted</button>
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h2>Trenerzy Personalni</h2>
+    <p>Wybierz swoje konto</p>
+    <div class="login-buttons">
+      <button class="login-btn alonso" onclick="login('Alonso')">Alonso</button>
+      <button class="login-btn haku" onclick="login('Haku')">Haku</button>
+      <button class="login-btn fred" onclick="login('Fred')">Fred</button>
+      <button class="login-btn ted" onclick="login('Ted')">Ted</button>
+    </div>
+  </div>
 </div>
+
+<div class="login-bar" id="loginBar"></div>
 
 <div class="sync-bar" id="syncBar">
   <span>Sync:</span>
@@ -1271,15 +1298,15 @@ function logout() {
 
 function updateLoginUI() {
   const user = getCurrentUser();
+  const screen = document.getElementById('loginScreen');
   const bar = document.getElementById('loginBar');
+
   if (user) {
+    screen.style.display = 'none';
     bar.innerHTML = `<span>Zalogowany jako:</span> <span class="user-badge">${user}</span> <button class="btn btn-gray" onclick="logout()">Wyloguj</button>`;
   } else {
-    bar.innerHTML = `<span>Zaloguj sie:</span>
-      <button class="btn btn-pink" onclick="login('Alonso')">Alonso</button>
-      <button class="btn btn-pink" onclick="login('Haku')">Haku</button>
-      <button class="btn btn-pink" onclick="login('Fred')">Fred</button>
-      <button class="btn btn-pink" onclick="login('Ted')">Ted</button>`;
+    screen.style.display = 'flex';
+    bar.innerHTML = '';
   }
 }
 

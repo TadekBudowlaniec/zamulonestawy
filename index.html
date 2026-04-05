@@ -91,6 +91,21 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
 }
 .scroll-top:hover { background: #c91358; }
 
+.login-bar {
+  background: #e8f4fd; padding: 10px 20px; border-bottom: 1px solid #b3d9f2;
+  display: flex; align-items: center; gap: 10px; font-size: 13px;
+}
+.login-bar input[type="text"] {
+  padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 180px;
+}
+.login-bar .user-badge {
+  background: #E1306C; color: white; padding: 4px 12px; border-radius: 12px;
+  font-weight: 600; font-size: 13px;
+}
+.contacted-by {
+  font-size: 11px; color: #666; font-style: italic;
+}
+
 .sync-bar {
   background: #fff3cd; padding: 10px 20px; border-bottom: 1px solid #ffc107;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px;
@@ -112,6 +127,13 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
     Napisano: <span id="contactedCount">0</span> |
     Pozostalo: <span id="remainingCount">933</span>
   </div>
+</div>
+
+<div class="login-bar" id="loginBar">
+  <span>Zaloguj sie:</span>
+  <input type="text" id="loginInput" placeholder="Twoje imie / nick">
+  <button class="btn btn-pink" onclick="login()">Zaloguj</button>
+  <span id="loginStatus"></span>
 </div>
 
 <div class="sync-bar" id="syncBar">
@@ -1228,13 +1250,53 @@ function scheduleSyncToGithub() {
   syncTimeout = setTimeout(() => syncToGithub(), 2000); // 2s po ostatnim kliknieciu
 }
 
+// ─── LOGIN ───────────────────────────────────────────────────────────────────
+
+const USER_KEY = 'ig_current_user';
+
+function getCurrentUser() {
+  return localStorage.getItem(USER_KEY) || '';
+}
+
+function login() {
+  const name = document.getElementById('loginInput').value.trim();
+  if (!name) { alert('Wpisz imie lub nick!'); return; }
+  localStorage.setItem(USER_KEY, name);
+  document.getElementById('loginInput').value = '';
+  updateLoginUI();
+}
+
+function logout() {
+  localStorage.removeItem(USER_KEY);
+  updateLoginUI();
+}
+
+function updateLoginUI() {
+  const user = getCurrentUser();
+  const bar = document.getElementById('loginBar');
+  if (user) {
+    bar.innerHTML = `<span>Zalogowany jako:</span> <span class="user-badge">${user}</span> <button class="btn btn-gray" onclick="logout()">Wyloguj</button>`;
+  } else {
+    bar.innerHTML = `<span>Zaloguj sie:</span> <input type="text" id="loginInput" placeholder="Twoje imie / nick"> <button class="btn btn-pink" onclick="login()">Zaloguj</button>`;
+    // Enter w polu logowania
+    setTimeout(() => {
+      const inp = document.getElementById('loginInput');
+      if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+    }, 0);
+  }
+}
+
+// ─── TOGGLE ──────────────────────────────────────────────────────────────────
+
 function toggleContacted(username) {
+  const user = getCurrentUser();
+  if (!user) { alert('Zaloguj sie zeby zaznaczac profile!'); render(); return; }
+
   const data = getContacted();
   if (data[username]) delete data[username];
-  else data[username] = Date.now();
+  else data[username] = { by: user, at: Date.now() };
   saveLocal(data);
-  renderPage(); // Nie resetuj strony, tylko odśwież aktualną
-  // Aktualizuj liczniki
+  renderPage();
   const contactedCount = Object.keys(data).length;
   document.getElementById('contactedCount').textContent = contactedCount;
   document.getElementById('remainingCount').textContent = PROFILES.length - contactedCount;
@@ -1303,7 +1365,9 @@ function renderPage() {
 
   list.innerHTML = pageItems.map((p, i) => {
     const num = start + i + 1;
-    const isContacted = !!contacted[p.username];
+    const entry = contacted[p.username];
+    const isContacted = !!entry;
+    const byText = (entry && entry.by) ? entry.by : '';
     return `
     <div class="profile-card ${isContacted ? 'contacted' : ''}">
       <input type="checkbox" ${isContacted ? 'checked' : ''}
@@ -1316,7 +1380,7 @@ function renderPage() {
         </div>
         <div class="profile-meta">${p.city} &middot; ${p.region}</div>
       </div>
-      <span class="badge-contacted">Napisano</span>
+      ${isContacted ? `<span class="badge-contacted">Napisano</span>${byText ? `<span class="contacted-by">przez ${byText}</span>` : ''}` : ''}
       <a href="${p.url}" target="_blank" class="btn btn-pink">Otworz IG</a>
     </div>`;
   }).join('');
@@ -1361,7 +1425,8 @@ document.getElementById('searchInput').addEventListener('input', render);
 document.getElementById('regionFilter').addEventListener('change', render);
 document.getElementById('statusFilter').addEventListener('change', render);
 
-// Przy starcie: renderuj z localStorage, potem sync z GitHub
+// Przy starcie
+updateLoginUI();
 render();
 if (getToken()) {
   document.getElementById('tokenInput').placeholder = 'Token zapisany';

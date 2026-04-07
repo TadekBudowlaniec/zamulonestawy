@@ -49,10 +49,26 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
 }
 .profile-card:hover { background: #fafafa; }
 .profile-card.contacted { background: #f0fff0; border-color: #b7e1b7; }
+.profile-card.replied { background: #e3f2fd; border-color: #90caf9; }
+.profile-card.agreed { background: #fff8e1; border-color: #ffca28; }
 
 .profile-card input[type="checkbox"] {
   width: 20px; height: 20px; cursor: pointer; accent-color: #E1306C; flex-shrink: 0;
 }
+
+.profile-checks {
+  display: flex; flex-direction: column; gap: 3px; flex-shrink: 0;
+  font-size: 11px; color: #555;
+}
+.profile-checks label {
+  display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none;
+  white-space: nowrap;
+}
+.profile-checks input[type="checkbox"] {
+  width: 16px; height: 16px;
+}
+.profile-checks input[type="checkbox"]:disabled { cursor: not-allowed; opacity: 0.4; }
+.profile-checks label:has(input:disabled) { color: #aaa; cursor: not-allowed; }
 
 .profile-num { font-size: 12px; color: #8e8e8e; width: 28px; text-align: center; flex-shrink: 0; }
 
@@ -1465,6 +1481,30 @@ function toggleContacted(username) {
   scheduleSyncToGithub();
 }
 
+function toggleReplied(username) {
+  const user = getCurrentUser();
+  if (!user) { alert('Zaloguj sie zeby zaznaczac profile!'); render(); return; }
+  const data = getContacted();
+  if (!data[username]) { alert('Najpierw zaznacz "napisał".'); render(); return; }
+  data[username].replied = !data[username].replied;
+  if (!data[username].replied) data[username].agreed = false;
+  saveLocal(data);
+  render(false);
+  scheduleSyncToGithub();
+}
+
+function toggleAgreed(username) {
+  const user = getCurrentUser();
+  if (!user) { alert('Zaloguj sie zeby zaznaczac profile!'); render(); return; }
+  const data = getContacted();
+  if (!data[username]) { alert('Najpierw zaznacz "napisał".'); render(); return; }
+  data[username].agreed = !data[username].agreed;
+  if (data[username].agreed) data[username].replied = true;
+  saveLocal(data);
+  render(false);
+  scheduleSyncToGithub();
+}
+
 function uncheckAll() {
   if (confirm('Odznacz wszystkie? Stracisz informacje o wyslanych wiadomosciach.')) {
     saveLocal({});
@@ -1509,14 +1549,35 @@ function render(scrollToFirst) {
     const num = i + 1;
     const entry = contacted[p.username];
     const isContacted = !!entry;
+    const isReplied = !!(entry && entry.replied);
+    const isAgreed = !!(entry && entry.agreed);
     const byText = (entry && entry.by) ? entry.by : '';
     const cardId = `card-${i}`;
     if (!isContacted && !firstUncheckedId) firstUncheckedId = cardId;
+    const stateCls = [
+      isContacted ? 'contacted' : '',
+      isReplied ? 'replied' : '',
+      isAgreed ? 'agreed' : '',
+    ].filter(Boolean).join(' ');
     return `
-    <div class="profile-card ${isContacted ? 'contacted' : ''}" id="${cardId}">
-      <input type="checkbox" ${isContacted ? 'checked' : ''}
-             onchange="toggleContacted('${p.username}')"
-             title="Zaznacz jesli napisales">
+    <div class="profile-card ${stateCls}" id="${cardId}">
+      <div class="profile-checks">
+        <label title="Zaznacz jesli napisales">
+          <input type="checkbox" ${isContacted ? 'checked' : ''}
+                 onchange="toggleContacted('${p.username}')">
+          napisał
+        </label>
+        <label title="Zaznacz jesli odpisal">
+          <input type="checkbox" ${isReplied ? 'checked' : ''} ${isContacted ? '' : 'disabled'}
+                 onchange="toggleReplied('${p.username}')">
+          odpisał
+        </label>
+        <label title="Zaznacz jesli sie zgodzil">
+          <input type="checkbox" ${isAgreed ? 'checked' : ''} ${isContacted ? '' : 'disabled'}
+                 onchange="toggleAgreed('${p.username}')">
+          zgodził się
+        </label>
+      </div>
       <span class="profile-num">${num}</span>
       <div class="profile-info">
         <div class="profile-username">

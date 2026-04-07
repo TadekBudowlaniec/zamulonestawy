@@ -146,9 +146,11 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
 <div class="header">
   <h1>Trenerzy Personalni - Instagram</h1>
   <div class="stats">
-    <span id="totalCount">1085</span> profili |
+    <span id="totalCount">1346</span> profili |
     Napisano: <span id="contactedCount">0</span> |
-    Pozostalo: <span id="remainingCount">1085</span>
+    Odpisali: <span id="repliedCount">0</span> |
+    Zgodzili sie: <span id="agreedCount">0</span> |
+    Pozostalo: <span id="remainingCount">1346</span>
   </div>
 </div>
 
@@ -183,8 +185,16 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
   </select>
   <select id="statusFilter">
     <option value="">Wszystkie</option>
-    <option value="pending">Nieodpisane</option>
-    <option value="contacted">Napisano</option>
+    <option value="pending">Nienapisane</option>
+    <option value="contacted">Napisane</option>
+    <option value="replied">Odpisali</option>
+    <option value="agreed">Zgodzili sie</option>
+  </select>
+  <select id="sortBy">
+    <option value="default">Sortuj: domyslnie</option>
+    <option value="replied">Najpierw: odpisali</option>
+    <option value="agreed">Najpierw: zgodzili sie</option>
+    <option value="status">Najpierw: zgodzili → odpisali → napisani</option>
   </select>
   <button class="btn btn-gray" onclick="uncheckAll()">Odznacz wszystko</button>
   <span class="filter-info" id="filterInfo"></span>
@@ -1279,7 +1289,268 @@ const PROFILES = [
   {"username": "benek_000", "url": "https://www.instagram.com/benek_000/", "city": "Piaski", "region": "Lubelskie"},
   {"username": "jkbpietka", "url": "https://www.instagram.com/jkbpietka/", "city": "Piaski", "region": "Lubelskie"},
   {"username": "factorycentrumfitness", "url": "https://www.instagram.com/factorycentrumfitness/", "city": "Piaski", "region": "Lubelskie"},
-  {"username": "fit_maniaa", "url": "https://www.instagram.com/fit_maniaa/", "city": "Piaski", "region": "Lubelskie"}
+  {"username": "fit_maniaa", "url": "https://www.instagram.com/fit_maniaa/", "city": "Piaski", "region": "Lubelskie"},
+  {"username": "fitkundzia", "url": "https://www.instagram.com/fitkundzia/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "trener_hapon", "url": "https://www.instagram.com/trener_hapon/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "panitrener_gocha", "url": "https://www.instagram.com/panitrener_gocha/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "forma_ponad_norme", "url": "https://www.instagram.com/forma_ponad_norme/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "team_trenerka_roksana", "url": "https://www.instagram.com/team_trenerka_roksana/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "aleksandraferenctrening", "url": "https://www.instagram.com/aleksandraferenctrening/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "trener_mateusz.kwiatkowski", "url": "https://www.instagram.com/trener_mateusz.kwiatkowski/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "iamclaudiade", "url": "https://www.instagram.com/iamclaudiade/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "dyszkiewicz.fit", "url": "https://www.instagram.com/dyszkiewicz.fit/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "architektura.ciala", "url": "https://www.instagram.com/architektura.ciala/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "_dziargany_trener", "url": "https://www.instagram.com/_dziargany_trener/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "trener.szewczuk", "url": "https://www.instagram.com/trener.szewczuk/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "klaudia_prusaczyk_trener", "url": "https://www.instagram.com/klaudia_prusaczyk_trener/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "trener_dawid.koniecki", "url": "https://www.instagram.com/trener_dawid.koniecki/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "max_trenuje", "url": "https://www.instagram.com/max_trenuje/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "szugarlifting", "url": "https://www.instagram.com/szugarlifting/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "nieinstatrener", "url": "https://www.instagram.com/nieinstatrener/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "piotr_witczak_trener", "url": "https://www.instagram.com/piotr_witczak_trener/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "kamil_probody", "url": "https://www.instagram.com/kamil_probody/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "boskaorzechowska", "url": "https://www.instagram.com/boskaorzechowska/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "ruch_z_glowa", "url": "https://www.instagram.com/ruch_z_glowa/", "city": "Białystok", "region": "Podlaskie"},
+  {"username": "endriovsky_training_concept", "url": "https://www.instagram.com/endriovsky_training_concept/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "_malikaga_", "url": "https://www.instagram.com/_malikaga_/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "___biegam_w_gorach___", "url": "https://www.instagram.com/___biegam_w_gorach___/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "zukowskatreningi", "url": "https://www.instagram.com/zukowskatreningi/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "joanna_matka_na_wychodnym", "url": "https://www.instagram.com/joanna_matka_na_wychodnym/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "malina.trenerka", "url": "https://www.instagram.com/malina.trenerka/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "filip_dec_", "url": "https://www.instagram.com/filip_dec_/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "karol_siemianowski", "url": "https://www.instagram.com/karol_siemianowski/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "110procent_trener_personalny", "url": "https://www.instagram.com/110procent_trener_personalny/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "oliwia.ozimek.fit", "url": "https://www.instagram.com/oliwia.ozimek.fit/", "city": "Susz", "region": "Warmińsko-Mazurskie"},
+  {"username": "darskoscfitness", "url": "https://www.instagram.com/darskoscfitness/", "city": "Susz", "region": "Warmińsko-Mazurskie"},
+  {"username": "aleksandraswitonska", "url": "https://www.instagram.com/aleksandraswitonska/", "city": "Susz", "region": "Warmińsko-Mazurskie"},
+  {"username": "piotreklasocki", "url": "https://www.instagram.com/piotreklasocki/", "city": "Susz", "region": "Warmińsko-Mazurskie"},
+  {"username": "masaz_rzymanki", "url": "https://www.instagram.com/masaz_rzymanki/", "city": "Susz", "region": "Warmińsko-Mazurskie"},
+  {"username": "addicted.to.endorphs", "url": "https://www.instagram.com/addicted.to.endorphs/", "city": "Susz", "region": "Warmińsko-Mazurskie"},
+  {"username": "marcinjaniszewski.trener", "url": "https://www.instagram.com/marcinjaniszewski.trener/", "city": "Lubawa", "region": "Warmińsko-Mazurskie"},
+  {"username": "saritta_w", "url": "https://www.instagram.com/saritta_w/", "city": "Lubawa", "region": "Warmińsko-Mazurskie"},
+  {"username": "festesilka", "url": "https://www.instagram.com/festesilka/", "city": "Lubawa", "region": "Warmińsko-Mazurskie"},
+  {"username": "_jankowski_p", "url": "https://www.instagram.com/_jankowski_p/", "city": "Lubawa", "region": "Warmińsko-Mazurskie"},
+  {"username": "slomiak_mma", "url": "https://www.instagram.com/slomiak_mma/", "city": "Wschowa", "region": "Lubuskie"},
+  {"username": "katepilates_pl", "url": "https://www.instagram.com/katepilates_pl/", "city": "Wschowa", "region": "Lubuskie"},
+  {"username": "bogdan.coach_pl", "url": "https://www.instagram.com/bogdan.coach_pl/", "city": "Sztum", "region": "Pomorskie"},
+  {"username": "architekt.twojego.ciala", "url": "https://www.instagram.com/architekt.twojego.ciala/", "city": "Drawno", "region": "Zachodniopomorskie"},
+  {"username": "patryk.crossboxing", "url": "https://www.instagram.com/patryk.crossboxing/", "city": "Grodzisk Wielkopolski", "region": "Wielkopolskie"},
+  {"username": "workout.evolution.wlkp", "url": "https://www.instagram.com/workout.evolution.wlkp/", "city": "Grodzisk Wielkopolski", "region": "Wielkopolskie"},
+  {"username": "klawytrener", "url": "https://www.instagram.com/klawytrener/", "city": "Grodzisk Wielkopolski", "region": "Wielkopolskie"},
+  {"username": "filipformaniak", "url": "https://www.instagram.com/filipformaniak/", "city": "Grodzisk Wielkopolski", "region": "Wielkopolskie"},
+  {"username": "alan_ciborowski", "url": "https://www.instagram.com/alan_ciborowski/", "city": "Grodzisk Wielkopolski", "region": "Wielkopolskie"},
+  {"username": "mat33o", "url": "https://www.instagram.com/mat33o/", "city": "Miastko", "region": "Pomorskie"},
+  {"username": "apliskowska_fitness", "url": "https://www.instagram.com/apliskowska_fitness/", "city": "Miastko", "region": "Pomorskie"},
+  {"username": "margareth_sing.cake.gym", "url": "https://www.instagram.com/margareth_sing.cake.gym/", "city": "Przasnysz", "region": "Mazowieckie"},
+  {"username": "kubss342", "url": "https://www.instagram.com/kubss342/", "city": "Przasnysz", "region": "Mazowieckie"},
+  {"username": "emma__urban", "url": "https://www.instagram.com/emma__urban/", "city": "Przasnysz", "region": "Mazowieckie"},
+  {"username": "patryk.kedra3", "url": "https://www.instagram.com/patryk.kedra3/", "city": "Nałęczów", "region": "Lubelskie"},
+  {"username": "aniaazaryan", "url": "https://www.instagram.com/aniaazaryan/", "city": "Nałęczów", "region": "Lubelskie"},
+  {"username": "maciej_szala", "url": "https://www.instagram.com/maciej_szala/", "city": "Nałęczów", "region": "Lubelskie"},
+  {"username": "magazynshiroaka", "url": "https://www.instagram.com/magazynshiroaka/", "city": "Nałęczów", "region": "Lubelskie"},
+  {"username": "zpns_ekipa", "url": "https://www.instagram.com/zpns_ekipa/", "city": "Koronowo", "region": "Kujawsko-Pomorskie"},
+  {"username": "sla_w", "url": "https://www.instagram.com/sla_w/", "city": "Koronowo", "region": "Kujawsko-Pomorskie"},
+  {"username": "dariusz_szalkowski", "url": "https://www.instagram.com/dariusz_szalkowski/", "city": "Koronowo", "region": "Kujawsko-Pomorskie"},
+  {"username": "hubertklodzinski", "url": "https://www.instagram.com/hubertklodzinski/", "city": "Koronowo", "region": "Kujawsko-Pomorskie"},
+  {"username": "bitwa.o.wschod", "url": "https://www.instagram.com/bitwa.o.wschod/", "city": "Koronowo", "region": "Kujawsko-Pomorskie"},
+  {"username": "lady_ostr", "url": "https://www.instagram.com/lady_ostr/", "city": "Gryfice", "region": "Zachodniopomorskie"},
+  {"username": "minor.studio.aktywnosci", "url": "https://www.instagram.com/minor.studio.aktywnosci/", "city": "Kowary", "region": "Dolnośląskie"},
+  {"username": "_anetachmiel_", "url": "https://www.instagram.com/_anetachmiel_/", "city": "Kowary", "region": "Dolnośląskie"},
+  {"username": "kacperkowacki", "url": "https://www.instagram.com/kacperkowacki/", "city": "Kowary", "region": "Dolnośląskie"},
+  {"username": "studio_fitknowhow", "url": "https://www.instagram.com/studio_fitknowhow/", "city": "Kowary", "region": "Dolnośląskie"},
+  {"username": "szymonchalupka", "url": "https://www.instagram.com/szymonchalupka/", "city": "Kowary", "region": "Dolnośląskie"},
+  {"username": "treningignaczak", "url": "https://www.instagram.com/treningignaczak/", "city": "Strzelce Krajeńskie", "region": "Lubuskie"},
+  {"username": "starczewska_szymanska_trener", "url": "https://www.instagram.com/starczewska_szymanska_trener/", "city": "Świecie", "region": "Kujawsko-Pomorskie"},
+  {"username": "ewelka303", "url": "https://www.instagram.com/ewelka303/", "city": "Świecie", "region": "Kujawsko-Pomorskie"},
+  {"username": "trenerpersonalny", "url": "https://www.instagram.com/trenerpersonalny/", "city": "Świecie", "region": "Kujawsko-Pomorskie"},
+  {"username": "trenermateuszstepien", "url": "https://www.instagram.com/trenermateuszstepien/", "city": "Świecie", "region": "Kujawsko-Pomorskie"},
+  {"username": "marcel_grudlewski", "url": "https://www.instagram.com/marcel_grudlewski/", "city": "Świecie", "region": "Kujawsko-Pomorskie"},
+  {"username": "zoriiian", "url": "https://www.instagram.com/zoriiian/", "city": "Świecie", "region": "Kujawsko-Pomorskie"},
+  {"username": "kuczy_sw", "url": "https://www.instagram.com/kuczy_sw/", "city": "Świecie", "region": "Kujawsko-Pomorskie"},
+  {"username": "tre.werka", "url": "https://www.instagram.com/tre.werka/", "city": "Świecie", "region": "Kujawsko-Pomorskie"},
+  {"username": "michu_trenuje", "url": "https://www.instagram.com/michu_trenuje/", "city": "Świecie", "region": "Kujawsko-Pomorskie"},
+  {"username": "mateusz.kiryluk_studio", "url": "https://www.instagram.com/mateusz.kiryluk_studio/", "city": "Siemiatycze", "region": "Podlaskie"},
+  {"username": "martyna_wozna_", "url": "https://www.instagram.com/martyna_wozna_/", "city": "Kościan", "region": "Wielkopolskie"},
+  {"username": "power_bikej", "url": "https://www.instagram.com/power_bikej/", "city": "Kościan", "region": "Wielkopolskie"},
+  {"username": "treneiro_arturo", "url": "https://www.instagram.com/treneiro_arturo/", "city": "Kościan", "region": "Wielkopolskie"},
+  {"username": "nietypowy__trener", "url": "https://www.instagram.com/nietypowy__trener/", "city": "Kościan", "region": "Wielkopolskie"},
+  {"username": "piotrtrabka", "url": "https://www.instagram.com/piotrtrabka/", "city": "Kościan", "region": "Wielkopolskie"},
+  {"username": "jkasprzak_fit", "url": "https://www.instagram.com/jkasprzak_fit/", "city": "Kościan", "region": "Wielkopolskie"},
+  {"username": "adriana.na.na", "url": "https://www.instagram.com/adriana.na.na/", "city": "Oleśnica", "region": "Dolnośląskie"},
+  {"username": "hubert_trenerpersonalny", "url": "https://www.instagram.com/hubert_trenerpersonalny/", "city": "Oleśnica", "region": "Dolnośląskie"},
+  {"username": "dominik_suchecki", "url": "https://www.instagram.com/dominik_suchecki/", "city": "Oleśnica", "region": "Dolnośląskie"},
+  {"username": "sportskamczyklife", "url": "https://www.instagram.com/sportskamczyklife/", "city": "Oleśnica", "region": "Dolnośląskie"},
+  {"username": "szczytformyst", "url": "https://www.instagram.com/szczytformyst/", "city": "Oleśnica", "region": "Dolnośląskie"},
+  {"username": "pau.linax3", "url": "https://www.instagram.com/pau.linax3/", "city": "Oleśnica", "region": "Dolnośląskie"},
+  {"username": "szymon_bartnik", "url": "https://www.instagram.com/szymon_bartnik/", "city": "Oleśnica", "region": "Dolnośląskie"},
+  {"username": "kuznia.fitpoint.olesnica", "url": "https://www.instagram.com/kuznia.fitpoint.olesnica/", "city": "Oleśnica", "region": "Dolnośląskie"},
+  {"username": "jamar_kochajenergie", "url": "https://www.instagram.com/jamar_kochajenergie/", "city": "Krzepice", "region": "Śląskie"},
+  {"username": "_dreambodycenter_", "url": "https://www.instagram.com/_dreambodycenter_/", "city": "Łomża", "region": "Podlaskie"},
+  {"username": "poprostukinga_ifbb_wellness", "url": "https://www.instagram.com/poprostukinga_ifbb_wellness/", "city": "Łomża", "region": "Podlaskie"},
+  {"username": "domfitnessu_lomza", "url": "https://www.instagram.com/domfitnessu_lomza/", "city": "Łomża", "region": "Podlaskie"},
+  {"username": "szymanowicz.trener", "url": "https://www.instagram.com/szymanowicz.trener/", "city": "Łomża", "region": "Podlaskie"},
+  {"username": "emsfitfactory_lomza", "url": "https://www.instagram.com/emsfitfactory_lomza/", "city": "Łomża", "region": "Podlaskie"},
+  {"username": "bart.karw", "url": "https://www.instagram.com/bart.karw/", "city": "Łomża", "region": "Podlaskie"},
+  {"username": "andziax006", "url": "https://www.instagram.com/andziax006/", "city": "Łomża", "region": "Podlaskie"},
+  {"username": "marcin_swierczek", "url": "https://www.instagram.com/marcin_swierczek/", "city": "Polanica-Zdrój", "region": "Dolnośląskie"},
+  {"username": "floverson22", "url": "https://www.instagram.com/floverson22/", "city": "Polanica-Zdrój", "region": "Dolnośląskie"},
+  {"username": "basiamatczak.reforma", "url": "https://www.instagram.com/basiamatczak.reforma/", "city": "Polanica-Zdrój", "region": "Dolnośląskie"},
+  {"username": "hpparkolsztyn", "url": "https://www.instagram.com/hpparkolsztyn/", "city": "Polanica-Zdrój", "region": "Dolnośląskie"},
+  {"username": "julitaaa.m", "url": "https://www.instagram.com/julitaaa.m/", "city": "Polanica-Zdrój", "region": "Dolnośląskie"},
+  {"username": "julisa95m", "url": "https://www.instagram.com/julisa95m/", "city": "Polanica-Zdrój", "region": "Dolnośląskie"},
+  {"username": "4esthetic_kamil", "url": "https://www.instagram.com/4esthetic_kamil/", "city": "Warta", "region": "Łódzkie"},
+  {"username": "trenermateusz", "url": "https://www.instagram.com/trenermateusz/", "city": "Warta", "region": "Łódzkie"},
+  {"username": "hubertprzytula", "url": "https://www.instagram.com/hubertprzytula/", "city": "Warta", "region": "Łódzkie"},
+  {"username": "kamil_walkiewicz_", "url": "https://www.instagram.com/kamil_walkiewicz_/", "city": "Warta", "region": "Łódzkie"},
+  {"username": "trener_arek", "url": "https://www.instagram.com/trener_arek/", "city": "Warta", "region": "Łódzkie"},
+  {"username": "sportowiec_maciek", "url": "https://www.instagram.com/sportowiec_maciek/", "city": "Warta", "region": "Łódzkie"},
+  {"username": "goldzia", "url": "https://www.instagram.com/goldzia/", "city": "Warta", "region": "Łódzkie"},
+  {"username": "dariusz.trener.masazysta", "url": "https://www.instagram.com/dariusz.trener.masazysta/", "city": "Warta", "region": "Łódzkie"},
+  {"username": "bartekgolik", "url": "https://www.instagram.com/bartekgolik/", "city": "Wąsosz", "region": "Dolnośląskie"},
+  {"username": "maja.op", "url": "https://www.instagram.com/maja.op/", "city": "Legionowo", "region": "Mazowieckie"},
+  {"username": "shekweronika", "url": "https://www.instagram.com/shekweronika/", "city": "Legionowo", "region": "Mazowieckie"},
+  {"username": "callmemraesthetic", "url": "https://www.instagram.com/callmemraesthetic/", "city": "Legionowo", "region": "Mazowieckie"},
+  {"username": "hard_working.girl", "url": "https://www.instagram.com/hard_working.girl/", "city": "Legionowo", "region": "Mazowieckie"},
+  {"username": "never_more_limits", "url": "https://www.instagram.com/never_more_limits/", "city": "Legionowo", "region": "Mazowieckie"},
+  {"username": "trener_a_puchala", "url": "https://www.instagram.com/trener_a_puchala/", "city": "Legionowo", "region": "Mazowieckie"},
+  {"username": "fitems.eu", "url": "https://www.instagram.com/fitems.eu/", "city": "Legionowo", "region": "Mazowieckie"},
+  {"username": "tyski_fit", "url": "https://www.instagram.com/tyski_fit/", "city": "Legionowo", "region": "Mazowieckie"},
+  {"username": "your.trainer_syrotiuk", "url": "https://www.instagram.com/your.trainer_syrotiuk/", "city": "Legionowo", "region": "Mazowieckie"},
+  {"username": "jakub_bany", "url": "https://www.instagram.com/jakub_bany/", "city": "Legionowo", "region": "Mazowieckie"},
+  {"username": "karys.fightlifting", "url": "https://www.instagram.com/karys.fightlifting/", "city": "Nowe Miasto Lubawskie", "region": "Warmińsko-Mazurskie"},
+  {"username": "next_levelbjj", "url": "https://www.instagram.com/next_levelbjj/", "city": "Nowe Miasto Lubawskie", "region": "Warmińsko-Mazurskie"},
+  {"username": "ks_teamwroclaw", "url": "https://www.instagram.com/ks_teamwroclaw/", "city": "Nowe Miasto Lubawskie", "region": "Warmińsko-Mazurskie"},
+  {"username": "fight_club_zenith_torun", "url": "https://www.instagram.com/fight_club_zenith_torun/", "city": "Nowe Miasto Lubawskie", "region": "Warmińsko-Mazurskie"},
+  {"username": "monika.fabis", "url": "https://www.instagram.com/monika.fabis/", "city": "Ziębice", "region": "Dolnośląskie"},
+  {"username": "emfitstrzelinziebice", "url": "https://www.instagram.com/emfitstrzelinziebice/", "city": "Ziębice", "region": "Dolnośląskie"},
+  {"username": "oazamocypl", "url": "https://www.instagram.com/oazamocypl/", "city": "Kańczuga", "region": "Podkarpackie"},
+  {"username": "areyouready__gym", "url": "https://www.instagram.com/areyouready__gym/", "city": "Głogów Małopolski", "region": "Podkarpackie"},
+  {"username": "kamil.mazur.kiewicz", "url": "https://www.instagram.com/kamil.mazur.kiewicz/", "city": "Dobczyce", "region": "Małopolskie"},
+  {"username": "trener.szymon.j", "url": "https://www.instagram.com/trener.szymon.j/", "city": "Dobczyce", "region": "Małopolskie"},
+  {"username": "studiotreningowe_dobczyce", "url": "https://www.instagram.com/studiotreningowe_dobczyce/", "city": "Dobczyce", "region": "Małopolskie"},
+  {"username": "bartosz_soboczynski_trener", "url": "https://www.instagram.com/bartosz_soboczynski_trener/", "city": "Dobczyce", "region": "Małopolskie"},
+  {"username": "gabi.blaszczak", "url": "https://www.instagram.com/gabi.blaszczak/", "city": "Dobczyce", "region": "Małopolskie"},
+  {"username": "michal_kopa", "url": "https://www.instagram.com/michal_kopa/", "city": "Dobczyce", "region": "Małopolskie"},
+  {"username": "marek_slusarczyk", "url": "https://www.instagram.com/marek_slusarczyk/", "city": "Dobczyce", "region": "Małopolskie"},
+  {"username": "centrumsportuzbaszyn", "url": "https://www.instagram.com/centrumsportuzbaszyn/", "city": "Babimost", "region": "Lubuskie"},
+  {"username": "twarzadosiebie", "url": "https://www.instagram.com/twarzadosiebie/", "city": "Babimost", "region": "Lubuskie"},
+  {"username": "fitnessclubpalladium", "url": "https://www.instagram.com/fitnessclubpalladium/", "city": "Pułtusk", "region": "Mazowieckie"},
+  {"username": "holistic.body", "url": "https://www.instagram.com/holistic.body/", "city": "Pułtusk", "region": "Mazowieckie"},
+  {"username": "studio_balans_id", "url": "https://www.instagram.com/studio_balans_id/", "city": "Pułtusk", "region": "Mazowieckie"},
+  {"username": "julia.nazarek", "url": "https://www.instagram.com/julia.nazarek/", "city": "Pułtusk", "region": "Mazowieckie"},
+  {"username": "atoberbuszman", "url": "https://www.instagram.com/atoberbuszman/", "city": "Pułtusk", "region": "Mazowieckie"},
+  {"username": "pabloolszak", "url": "https://www.instagram.com/pabloolszak/", "city": "Pułtusk", "region": "Mazowieckie"},
+  {"username": "michalborkowskiofficial", "url": "https://www.instagram.com/michalborkowskiofficial/", "city": "Pułtusk", "region": "Mazowieckie"},
+  {"username": "rusz_sie_zdrowo_", "url": "https://www.instagram.com/rusz_sie_zdrowo_/", "city": "Inowrocław", "region": "Kujawsko-Pomorskie"},
+  {"username": "x_x_luki_x_x_", "url": "https://www.instagram.com/x_x_luki_x_x_/", "city": "Inowrocław", "region": "Kujawsko-Pomorskie"},
+  {"username": "a__sieradzka", "url": "https://www.instagram.com/a__sieradzka/", "city": "Inowrocław", "region": "Kujawsko-Pomorskie"},
+  {"username": "stpbarbellsquadinowroclaw", "url": "https://www.instagram.com/stpbarbellsquadinowroclaw/", "city": "Inowrocław", "region": "Kujawsko-Pomorskie"},
+  {"username": "fitboxinowroclaw", "url": "https://www.instagram.com/fitboxinowroclaw/", "city": "Inowrocław", "region": "Kujawsko-Pomorskie"},
+  {"username": "sfera101.beautyclinic", "url": "https://www.instagram.com/sfera101.beautyclinic/", "city": "Józefów", "region": "Lubelskie"},
+  {"username": "stachovviak", "url": "https://www.instagram.com/stachovviak/", "city": "Nowa Ruda", "region": "Dolnośląskie"},
+  {"username": "atletiaks", "url": "https://www.instagram.com/atletiaks/", "city": "Nowa Ruda", "region": "Dolnośląskie"},
+  {"username": "primiiera", "url": "https://www.instagram.com/primiiera/", "city": "Słupca", "region": "Wielkopolskie"},
+  {"username": "zpatka_wformie", "url": "https://www.instagram.com/zpatka_wformie/", "city": "Darłowo", "region": "Zachodniopomorskie"},
+  {"username": "gymsoccer_coach", "url": "https://www.instagram.com/gymsoccer_coach/", "city": "Darłowo", "region": "Zachodniopomorskie"},
+  {"username": "kalbartoja", "url": "https://www.instagram.com/kalbartoja/", "city": "Lębork", "region": "Pomorskie"},
+  {"username": "malgorzata.dulewicz", "url": "https://www.instagram.com/malgorzata.dulewicz/", "city": "Lębork", "region": "Pomorskie"},
+  {"username": "szafa.dawid", "url": "https://www.instagram.com/szafa.dawid/", "city": "Lębork", "region": "Pomorskie"},
+  {"username": "pawel_mielewczyk", "url": "https://www.instagram.com/pawel_mielewczyk/", "city": "Lębork", "region": "Pomorskie"},
+  {"username": "andrzejhcz", "url": "https://www.instagram.com/andrzejhcz/", "city": "Lębork", "region": "Pomorskie"},
+  {"username": "trener_kasprzyk", "url": "https://www.instagram.com/trener_kasprzyk/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "trenerlilka", "url": "https://www.instagram.com/trenerlilka/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "marysiafrydrysiak", "url": "https://www.instagram.com/marysiafrydrysiak/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "maciejlukomski", "url": "https://www.instagram.com/maciejlukomski/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "homeofbodypl", "url": "https://www.instagram.com/homeofbodypl/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "trainingdoctors", "url": "https://www.instagram.com/trainingdoctors/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "arni_coach", "url": "https://www.instagram.com/arni_coach/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "grubytrener", "url": "https://www.instagram.com/grubytrener/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "darek_trener_personalny", "url": "https://www.instagram.com/darek_trener_personalny/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "donbellmanno", "url": "https://www.instagram.com/donbellmanno/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "trenerwnuczek", "url": "https://www.instagram.com/trenerwnuczek/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "jedrzejpietz", "url": "https://www.instagram.com/jedrzejpietz/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "kynderrr", "url": "https://www.instagram.com/kynderrr/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "adam.andrzejewski", "url": "https://www.instagram.com/adam.andrzejewski/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "wladek.trener", "url": "https://www.instagram.com/wladek.trener/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "michalkoniecznyy", "url": "https://www.instagram.com/michalkoniecznyy/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "arekfit_lifestyle", "url": "https://www.instagram.com/arekfit_lifestyle/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "trenerpoznan", "url": "https://www.instagram.com/trenerpoznan/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "reform.studiotreningu", "url": "https://www.instagram.com/reform.studiotreningu/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "walkastart", "url": "https://www.instagram.com/walkastart/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "trenerkozlarek", "url": "https://www.instagram.com/trenerkozlarek/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "piecu.workout", "url": "https://www.instagram.com/piecu.workout/", "city": "Poznań", "region": "Wielkopolskie"},
+  {"username": "kowalczyk_kamil_92", "url": "https://www.instagram.com/kowalczyk_kamil_92/", "city": "Sulejów", "region": "Łódzkie"},
+  {"username": "adriano_boncini", "url": "https://www.instagram.com/adriano_boncini/", "city": "Sosnowiec", "region": "Śląskie"},
+  {"username": "joanna_od_treningu", "url": "https://www.instagram.com/joanna_od_treningu/", "city": "Sosnowiec", "region": "Śląskie"},
+  {"username": "stylefit_lil", "url": "https://www.instagram.com/stylefit_lil/", "city": "Sosnowiec", "region": "Śląskie"},
+  {"username": "7_lo_baczyn", "url": "https://www.instagram.com/7_lo_baczyn/", "city": "Sosnowiec", "region": "Śląskie"},
+  {"username": "fit_kulka_trenerpersonalny", "url": "https://www.instagram.com/fit_kulka_trenerpersonalny/", "city": "Wyszków", "region": "Mazowieckie"},
+  {"username": "kamila.woltanska", "url": "https://www.instagram.com/kamila.woltanska/", "city": "Wyszków", "region": "Mazowieckie"},
+  {"username": "gym_bartender", "url": "https://www.instagram.com/gym_bartender/", "city": "Wyszków", "region": "Mazowieckie"},
+  {"username": "arkadiuszmarchel_ifbbpro", "url": "https://www.instagram.com/arkadiuszmarchel_ifbbpro/", "city": "Wyszków", "region": "Mazowieckie"},
+  {"username": "hubert_heronimek", "url": "https://www.instagram.com/hubert_heronimek/", "city": "Wyszków", "region": "Mazowieckie"},
+  {"username": "strefa_ruchu_wyszkow", "url": "https://www.instagram.com/strefa_ruchu_wyszkow/", "city": "Wyszków", "region": "Mazowieckie"},
+  {"username": "studio.powerfit", "url": "https://www.instagram.com/studio.powerfit/", "city": "Wyszków", "region": "Mazowieckie"},
+  {"username": "sdw_magazine", "url": "https://www.instagram.com/sdw_magazine/", "city": "Wyszków", "region": "Mazowieckie"},
+  {"username": "zmoratrenuje", "url": "https://www.instagram.com/zmoratrenuje/", "city": "Ciechanowiec", "region": "Podlaskie"},
+  {"username": "sylwialukaszewicz", "url": "https://www.instagram.com/sylwialukaszewicz/", "city": "Jastarnia", "region": "Pomorskie"},
+  {"username": "michal_gajda_trener_personalny", "url": "https://www.instagram.com/michal_gajda_trener_personalny/", "city": "Jastarnia", "region": "Pomorskie"},
+  {"username": "the_goekh", "url": "https://www.instagram.com/the_goekh/", "city": "Jastarnia", "region": "Pomorskie"},
+  {"username": "kacperkromski_", "url": "https://www.instagram.com/kacperkromski_/", "city": "Jastarnia", "region": "Pomorskie"},
+  {"username": "nastka.sikorska", "url": "https://www.instagram.com/nastka.sikorska/", "city": "Jastarnia", "region": "Pomorskie"},
+  {"username": "krzysztof_buczkowski_pt", "url": "https://www.instagram.com/krzysztof_buczkowski_pt/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "trenerjoannamaryniak", "url": "https://www.instagram.com/trenerjoannamaryniak/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "wibrem.arena", "url": "https://www.instagram.com/wibrem.arena/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "ania.dawidowska", "url": "https://www.instagram.com/ania.dawidowska/", "city": "Bardo", "region": "Dolnośląskie"},
+  {"username": "karol.ptaszkiewicz", "url": "https://www.instagram.com/karol.ptaszkiewicz/", "city": "Ciechanów", "region": "Mazowieckie"},
+  {"username": "jberkatrening", "url": "https://www.instagram.com/jberkatrening/", "city": "Ciechanów", "region": "Mazowieckie"},
+  {"username": "lesniewska_trenerka", "url": "https://www.instagram.com/lesniewska_trenerka/", "city": "Ciechanów", "region": "Mazowieckie"},
+  {"username": "xfg_ciechanowgostkow", "url": "https://www.instagram.com/xfg_ciechanowgostkow/", "city": "Ciechanów", "region": "Mazowieckie"},
+  {"username": "yopro.pl", "url": "https://www.instagram.com/yopro.pl/", "city": "Ciechanów", "region": "Mazowieckie"},
+  {"username": "mirek_okninski", "url": "https://www.instagram.com/mirek_okninski/", "city": "Ciechanów", "region": "Mazowieckie"},
+  {"username": "rafal_borucki", "url": "https://www.instagram.com/rafal_borucki/", "city": "Kluczbork", "region": "Opolskie"},
+  {"username": "babajaga.fitnesscomplex", "url": "https://www.instagram.com/babajaga.fitnesscomplex/", "city": "Kluczbork", "region": "Opolskie"},
+  {"username": "aleksandra_blana", "url": "https://www.instagram.com/aleksandra_blana/", "city": "Kluczbork", "region": "Opolskie"},
+  {"username": "alphaathletics.pl", "url": "https://www.instagram.com/alphaathletics.pl/", "city": "Kluczbork", "region": "Opolskie"},
+  {"username": "medgym_bp", "url": "https://www.instagram.com/medgym_bp/", "city": "Biała Podlaska", "region": "Lubelskie"},
+  {"username": "calisecondlive", "url": "https://www.instagram.com/calisecondlive/", "city": "Biała Podlaska", "region": "Lubelskie"},
+  {"username": "dariaciokalska", "url": "https://www.instagram.com/dariaciokalska/", "city": "Biała Podlaska", "region": "Lubelskie"},
+  {"username": "monia_fitness", "url": "https://www.instagram.com/monia_fitness/", "city": "Biała Podlaska", "region": "Lubelskie"},
+  {"username": "daniel_zmg", "url": "https://www.instagram.com/daniel_zmg/", "city": "Kętrzyn", "region": "Warmińsko-Mazurskie"},
+  {"username": "rafal_truszkowski_", "url": "https://www.instagram.com/rafal_truszkowski_/", "city": "Kętrzyn", "region": "Warmińsko-Mazurskie"},
+  {"username": "laikike2", "url": "https://www.instagram.com/laikike2/", "city": "Kętrzyn", "region": "Warmińsko-Mazurskie"},
+  {"username": "marcin.sek", "url": "https://www.instagram.com/marcin.sek/", "city": "Kętrzyn", "region": "Warmińsko-Mazurskie"},
+  {"username": "fabian.posch.trener", "url": "https://www.instagram.com/fabian.posch.trener/", "city": "Zakliczyn", "region": "Małopolskie"},
+  {"username": "onegymzawiercie", "url": "https://www.instagram.com/onegymzawiercie/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "marcel_trener_97", "url": "https://www.instagram.com/marcel_trener_97/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "anetaa_trener", "url": "https://www.instagram.com/anetaa_trener/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "misia_klaudia_", "url": "https://www.instagram.com/misia_klaudia_/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "interfitclub_zawiercie", "url": "https://www.instagram.com/interfitclub_zawiercie/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "ka.rina_active", "url": "https://www.instagram.com/ka.rina_active/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "fitlady_z", "url": "https://www.instagram.com/fitlady_z/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "xfg_zawierciepilsudskiego", "url": "https://www.instagram.com/xfg_zawierciepilsudskiego/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "mslezak_trenerpersonalny", "url": "https://www.instagram.com/mslezak_trenerpersonalny/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "davegrandote", "url": "https://www.instagram.com/davegrandote/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "obathletic_trener_personalny", "url": "https://www.instagram.com/obathletic_trener_personalny/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "trenerzyzbaczyna", "url": "https://www.instagram.com/trenerzyzbaczyna/", "city": "Zawiercie", "region": "Śląskie"},
+  {"username": "torun_z_elblaga", "url": "https://www.instagram.com/torun_z_elblaga/", "city": "Elbląg", "region": "Warmińsko-Mazurskie"},
+  {"username": "old_town_fitness_elblag", "url": "https://www.instagram.com/old_town_fitness_elblag/", "city": "Elbląg", "region": "Warmińsko-Mazurskie"},
+  {"username": "domivan92", "url": "https://www.instagram.com/domivan92/", "city": "Elbląg", "region": "Warmińsko-Mazurskie"},
+  {"username": "fifi_trener", "url": "https://www.instagram.com/fifi_trener/", "city": "Elbląg", "region": "Warmińsko-Mazurskie"},
+  {"username": "peciak_lukasz", "url": "https://www.instagram.com/peciak_lukasz/", "city": "Elbląg", "region": "Warmińsko-Mazurskie"},
+  {"username": "wkozlowskaa_silowniaidieta", "url": "https://www.instagram.com/wkozlowskaa_silowniaidieta/", "city": "Elbląg", "region": "Warmińsko-Mazurskie"},
+  {"username": "dannypiatus", "url": "https://www.instagram.com/dannypiatus/", "city": "Elbląg", "region": "Warmińsko-Mazurskie"},
+  {"username": "generacja_fitness_elblag", "url": "https://www.instagram.com/generacja_fitness_elblag/", "city": "Elbląg", "region": "Warmińsko-Mazurskie"},
+  {"username": "xfg_limanowa", "url": "https://www.instagram.com/xfg_limanowa/", "city": "Limanowa", "region": "Małopolskie"},
+  {"username": "ewa_mordarska", "url": "https://www.instagram.com/ewa_mordarska/", "city": "Limanowa", "region": "Małopolskie"},
+  {"username": "wioleta_sroka", "url": "https://www.instagram.com/wioleta_sroka/", "city": "Limanowa", "region": "Małopolskie"},
+  {"username": "novaformastudio.limanowa", "url": "https://www.instagram.com/novaformastudio.limanowa/", "city": "Limanowa", "region": "Małopolskie"},
+  {"username": "kfranczak_", "url": "https://www.instagram.com/kfranczak_/", "city": "Limanowa", "region": "Małopolskie"},
+  {"username": "fizjo_insider", "url": "https://www.instagram.com/fizjo_insider/", "city": "Limanowa", "region": "Małopolskie"},
+  {"username": "wioletawiola123", "url": "https://www.instagram.com/wioletawiola123/", "city": "Mogilno", "region": "Kujawsko-Pomorskie"},
+  {"username": "run_with_ann", "url": "https://www.instagram.com/run_with_ann/", "city": "Mogilno", "region": "Kujawsko-Pomorskie"},
+  {"username": "ludzik_trenuje", "url": "https://www.instagram.com/ludzik_trenuje/", "city": "Mogilno", "region": "Kujawsko-Pomorskie"},
+  {"username": "arni_mma", "url": "https://www.instagram.com/arni_mma/", "city": "Mogilno", "region": "Kujawsko-Pomorskie"}
 ];
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
@@ -1522,18 +1793,49 @@ function render(scrollToFirst) {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const region = document.getElementById('regionFilter').value;
   const status = document.getElementById('statusFilter').value;
+  const sortBy = (document.getElementById('sortBy') || {}).value || 'default';
 
   lastFiltered = PROFILES.filter(p => {
+    const e = contacted[p.username];
     if (search && !p.username.includes(search) && !p.city.toLowerCase().includes(search)) return false;
     if (region && p.region !== region) return false;
-    if (status === 'contacted' && !contacted[p.username]) return false;
-    if (status === 'pending' && contacted[p.username]) return false;
+    if (status === 'contacted' && !e) return false;
+    if (status === 'pending' && e) return false;
+    if (status === 'replied' && !(e && e.replied)) return false;
+    if (status === 'agreed' && !(e && e.agreed)) return false;
     return true;
   });
 
+  if (sortBy !== 'default') {
+    const rank = p => {
+      const e = contacted[p.username];
+      const agreed = !!(e && e.agreed);
+      const replied = !!(e && e.replied);
+      if (sortBy === 'agreed')   return agreed ? 0 : 1;
+      if (sortBy === 'replied')  return replied ? 0 : 1;
+      // 'status': zgodzili → odpisali → napisani → reszta
+      if (agreed)   return 0;
+      if (replied)  return 1;
+      if (e)        return 2;
+      return 3;
+    };
+    // stable sort: keep original order within same rank
+    lastFiltered = lastFiltered
+      .map((p, i) => ({ p, i, r: rank(p) }))
+      .sort((a, b) => a.r - b.r || a.i - b.i)
+      .map(x => x.p);
+  }
+
   const contactedCount = Object.keys(contacted).length;
+  let repliedCount = 0, agreedCount = 0;
+  for (const k in contacted) {
+    if (contacted[k] && contacted[k].replied) repliedCount++;
+    if (contacted[k] && contacted[k].agreed)  agreedCount++;
+  }
   document.getElementById('contactedCount').textContent = contactedCount;
   document.getElementById('remainingCount').textContent = PROFILES.length - contactedCount;
+  const rc = document.getElementById('repliedCount'); if (rc) rc.textContent = repliedCount;
+  const ac = document.getElementById('agreedCount');  if (ac) ac.textContent = agreedCount;
   document.getElementById('filterInfo').textContent = lastFiltered.length < PROFILES.length
     ? `Pokazano ${lastFiltered.length} z ${PROFILES.length}` : '';
 
@@ -1623,6 +1925,7 @@ regions.forEach(r => {
 document.getElementById('searchInput').addEventListener('input', render);
 document.getElementById('regionFilter').addEventListener('change', render);
 document.getElementById('statusFilter').addEventListener('change', render);
+document.getElementById('sortBy').addEventListener('change', render);
 
 // Przy starcie
 updateLoginUI();

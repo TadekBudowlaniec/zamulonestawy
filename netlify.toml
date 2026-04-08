@@ -1,0 +1,7 @@
+[build]
+  publish = "."
+  # Pomijaj build, jesli jedyna zmiana od ostatniego deployu to contacted.json
+  # (klient i tak czyta ten plik bezposrednio z GitHub API, nie z deployu).
+  # `git diff --quiet` zwraca 0 gdy brak roznic poza contacted.json -> Netlify
+  # interpretuje exit 0 jako "skip build". Nie-zero -> normalny build.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!contacted.json'"

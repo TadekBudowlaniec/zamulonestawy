@@ -61,26 +61,10 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
 .ranking-box .empty-rank { color: #8e8e8e; font-size: 13px; }
 
 .profile-card.contacted { background: #f0fff0; border-color: #b7e1b7; }
-.profile-card.replied { background: #e3f2fd; border-color: #90caf9; }
-.profile-card.agreed { background: #fff8e1; border-color: #ffca28; }
 
 .profile-card input[type="checkbox"] {
   width: 20px; height: 20px; cursor: pointer; accent-color: #E1306C; flex-shrink: 0;
 }
-
-.profile-checks {
-  display: flex; flex-direction: column; gap: 3px; flex-shrink: 0;
-  font-size: 11px; color: #555;
-}
-.profile-checks label {
-  display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none;
-  white-space: nowrap;
-}
-.profile-checks input[type="checkbox"] {
-  width: 16px; height: 16px;
-}
-.profile-checks input[type="checkbox"]:disabled { cursor: not-allowed; opacity: 0.4; }
-.profile-checks label:has(input:disabled) { color: #aaa; cursor: not-allowed; }
 
 .profile-num { font-size: 12px; color: #8e8e8e; width: 28px; text-align: center; flex-shrink: 0; }
 
@@ -160,8 +144,6 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
   <div class="stats">
     <span id="totalCount">1346</span> profili |
     Napisano: <span id="contactedCount">0</span> |
-    Odpisali: <span id="repliedCount">0</span> |
-    Zgodzili sie: <span id="agreedCount">0</span> |
     Pozostalo: <span id="remainingCount">1346</span>
   </div>
   <div class="ranking-bar">
@@ -203,14 +185,6 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
     <option value="">Wszystkie</option>
     <option value="pending">Nienapisane</option>
     <option value="contacted">Napisane</option>
-    <option value="replied">Odpisali</option>
-    <option value="agreed">Zgodzili sie</option>
-  </select>
-  <select id="sortBy">
-    <option value="default">Sortuj: domyslnie</option>
-    <option value="replied">Najpierw: odpisali</option>
-    <option value="agreed">Najpierw: zgodzili sie</option>
-    <option value="status">Najpierw: zgodzili → odpisali → napisani</option>
   </select>
   <button class="btn btn-gray" onclick="uncheckAll()">Odznacz wszystko</button>
   <span class="filter-info" id="filterInfo"></span>
@@ -1772,30 +1746,6 @@ function toggleContacted(username) {
   scheduleSyncToGithub();
 }
 
-function toggleReplied(username) {
-  const user = getCurrentUser();
-  if (!user) { alert('Zaloguj sie zeby zaznaczac profile!'); render(); return; }
-  const data = getContacted();
-  if (!data[username]) { alert('Najpierw zaznacz "napisał".'); render(); return; }
-  data[username].replied = !data[username].replied;
-  if (!data[username].replied) data[username].agreed = false;
-  saveLocal(data);
-  render(false);
-  scheduleSyncToGithub();
-}
-
-function toggleAgreed(username) {
-  const user = getCurrentUser();
-  if (!user) { alert('Zaloguj sie zeby zaznaczac profile!'); render(); return; }
-  const data = getContacted();
-  if (!data[username]) { alert('Najpierw zaznacz "napisał".'); render(); return; }
-  data[username].agreed = !data[username].agreed;
-  if (data[username].agreed) data[username].replied = true;
-  saveLocal(data);
-  render(false);
-  scheduleSyncToGithub();
-}
-
 function uncheckAll() {
   if (confirm('Odznacz wszystkie? Stracisz informacje o wyslanych wiadomosciach.')) {
     saveLocal({});
@@ -1842,49 +1792,18 @@ function render(scrollToFirst) {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const region = document.getElementById('regionFilter').value;
   const status = document.getElementById('statusFilter').value;
-  const sortBy = (document.getElementById('sortBy') || {}).value || 'default';
 
   lastFiltered = PROFILES.filter(p => {
-    const e = contacted[p.username];
     if (search && !p.username.includes(search) && !p.city.toLowerCase().includes(search)) return false;
     if (region && p.region !== region) return false;
-    if (status === 'contacted' && !e) return false;
-    if (status === 'pending' && e) return false;
-    if (status === 'replied' && !(e && e.replied)) return false;
-    if (status === 'agreed' && !(e && e.agreed)) return false;
+    if (status === 'contacted' && !contacted[p.username]) return false;
+    if (status === 'pending' && contacted[p.username]) return false;
     return true;
   });
 
-  if (sortBy !== 'default') {
-    const rank = p => {
-      const e = contacted[p.username];
-      const agreed = !!(e && e.agreed);
-      const replied = !!(e && e.replied);
-      if (sortBy === 'agreed')   return agreed ? 0 : 1;
-      if (sortBy === 'replied')  return replied ? 0 : 1;
-      // 'status': zgodzili → odpisali → napisani → reszta
-      if (agreed)   return 0;
-      if (replied)  return 1;
-      if (e)        return 2;
-      return 3;
-    };
-    // stable sort: keep original order within same rank
-    lastFiltered = lastFiltered
-      .map((p, i) => ({ p, i, r: rank(p) }))
-      .sort((a, b) => a.r - b.r || a.i - b.i)
-      .map(x => x.p);
-  }
-
   const contactedCount = Object.keys(contacted).length;
-  let repliedCount = 0, agreedCount = 0;
-  for (const k in contacted) {
-    if (contacted[k] && contacted[k].replied) repliedCount++;
-    if (contacted[k] && contacted[k].agreed)  agreedCount++;
-  }
   document.getElementById('contactedCount').textContent = contactedCount;
   document.getElementById('remainingCount').textContent = PROFILES.length - contactedCount;
-  const rc = document.getElementById('repliedCount'); if (rc) rc.textContent = repliedCount;
-  const ac = document.getElementById('agreedCount');  if (ac) ac.textContent = agreedCount;
   const rb = document.getElementById('rankingBox');
   if (rb && rb.style.display !== 'none') renderRanking();
   document.getElementById('filterInfo').textContent = lastFiltered.length < PROFILES.length
@@ -1902,35 +1821,14 @@ function render(scrollToFirst) {
     const num = i + 1;
     const entry = contacted[p.username];
     const isContacted = !!entry;
-    const isReplied = !!(entry && entry.replied);
-    const isAgreed = !!(entry && entry.agreed);
     const byText = (entry && entry.by) ? entry.by : '';
     const cardId = `card-${i}`;
     if (!isContacted && !firstUncheckedId) firstUncheckedId = cardId;
-    const stateCls = [
-      isContacted ? 'contacted' : '',
-      isReplied ? 'replied' : '',
-      isAgreed ? 'agreed' : '',
-    ].filter(Boolean).join(' ');
     return `
-    <div class="profile-card ${stateCls}" id="${cardId}">
-      <div class="profile-checks">
-        <label title="Zaznacz jesli napisales">
-          <input type="checkbox" ${isContacted ? 'checked' : ''}
-                 onchange="toggleContacted('${p.username}')">
-          napisał
-        </label>
-        <label title="Zaznacz jesli odpisal">
-          <input type="checkbox" ${isReplied ? 'checked' : ''} ${isContacted ? '' : 'disabled'}
-                 onchange="toggleReplied('${p.username}')">
-          odpisał
-        </label>
-        <label title="Zaznacz jesli sie zgodzil">
-          <input type="checkbox" ${isAgreed ? 'checked' : ''} ${isContacted ? '' : 'disabled'}
-                 onchange="toggleAgreed('${p.username}')">
-          zgodził się
-        </label>
-      </div>
+    <div class="profile-card ${isContacted ? 'contacted' : ''}" id="${cardId}">
+      <input type="checkbox" ${isContacted ? 'checked' : ''}
+             onchange="toggleContacted('${p.username}')"
+             title="Zaznacz jesli napisales">
       <span class="profile-num">${num}</span>
       <div class="profile-info">
         <div class="profile-username">
@@ -1976,7 +1874,6 @@ regions.forEach(r => {
 document.getElementById('searchInput').addEventListener('input', render);
 document.getElementById('regionFilter').addEventListener('change', render);
 document.getElementById('statusFilter').addEventListener('change', render);
-document.getElementById('sortBy').addEventListener('change', render);
 
 // Przy starcie
 updateLoginUI();

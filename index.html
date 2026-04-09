@@ -48,6 +48,18 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
   transition: background 0.15s;
 }
 .profile-card:hover { background: #fafafa; }
+.ranking-bar { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.ranking-box {
+  background: white; border: 1px solid #dbdbdb; border-radius: 8px;
+  padding: 12px 16px; min-width: 260px; box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+.ranking-box h3 { margin: 0 0 8px 0; font-size: 14px; color: #262626; }
+.ranking-box ol { margin: 0; padding-left: 24px; }
+.ranking-box li { padding: 4px 0; font-size: 14px; color: #262626; }
+.ranking-box li .ru { font-weight: 600; }
+.ranking-box li .rc { color: #E1306C; font-weight: 700; margin-left: 6px; }
+.ranking-box .empty-rank { color: #8e8e8e; font-size: 13px; }
+
 .profile-card.contacted { background: #f0fff0; border-color: #b7e1b7; }
 .profile-card.replied { background: #e3f2fd; border-color: #90caf9; }
 .profile-card.agreed { background: #fff8e1; border-color: #ffca28; }
@@ -151,6 +163,10 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
     Odpisali: <span id="repliedCount">0</span> |
     Zgodzili sie: <span id="agreedCount">0</span> |
     Pozostalo: <span id="remainingCount">1346</span>
+  </div>
+  <div class="ranking-bar">
+    <button class="btn btn-pink" onclick="toggleRanking()">Ranking</button>
+    <div id="rankingBox" class="ranking-box" style="display:none;"></div>
   </div>
 </div>
 
@@ -1784,6 +1800,35 @@ function uncheckAll() {
   }
 }
 
+function toggleRanking() {
+  const box = document.getElementById('rankingBox');
+  if (box.style.display === 'none') {
+    renderRanking();
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function renderRanking() {
+  const data = getContacted();
+  const counts = {};
+  for (const k in data) {
+    const by = (data[k] && data[k].by) ? data[k].by : '(nieznany)';
+    counts[by] = (counts[by] || 0) + 1;
+  }
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const box = document.getElementById('rankingBox');
+  if (sorted.length === 0) {
+    box.innerHTML = '<h3>Ranking - kto napisal do ilu trenerow</h3><div class="empty-rank">Jeszcze nikt nic nie zaznaczyl.</div>';
+    return;
+  }
+  const items = sorted.map(([by, n]) =>
+    `<li><span class="ru">${by}</span><span class="rc">${n}</span></li>`
+  ).join('');
+  box.innerHTML = `<h3>Ranking - kto napisal do ilu trenerow</h3><ol>${items}</ol>`;
+}
+
 // ─── RENDER ──────────────────────────────────────────────────────────────────
 
 let lastFiltered = [];
@@ -1836,6 +1881,8 @@ function render(scrollToFirst) {
   document.getElementById('remainingCount').textContent = PROFILES.length - contactedCount;
   const rc = document.getElementById('repliedCount'); if (rc) rc.textContent = repliedCount;
   const ac = document.getElementById('agreedCount');  if (ac) ac.textContent = agreedCount;
+  const rb = document.getElementById('rankingBox');
+  if (rb && rb.style.display !== 'none') renderRanking();
   document.getElementById('filterInfo').textContent = lastFiltered.length < PROFILES.length
     ? `Pokazano ${lastFiltered.length} z ${PROFILES.length}` : '';
 

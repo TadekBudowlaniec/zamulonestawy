@@ -1573,6 +1573,9 @@ const PROFILES = [
 const REPO_OWNER = 'TadekBudowlaniec';
 const REPO_NAME = 'zamulonestawy';
 const DATA_FILE = 'contacted.json';
+// Branch trzymajacy contacted.json - osobny od main, zeby Netlify nie buildowal
+// strony przy kazdym kliknieciu (Netlify pilnuje tylko main).
+const DATA_BRANCH = 'data';
 const LOCAL_KEY = 'ig_contacted';
 const TOKEN_KEY = 'ig_github_token';
 
@@ -1602,7 +1605,7 @@ async function githubGet() {
   if (!token) return null;
   try {
     const resp = await fetch(
-      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`,
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}?ref=${DATA_BRANCH}`,
       { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } }
     );
     if (resp.status === 404) return { data: {}, sha: null };
@@ -1623,6 +1626,7 @@ async function githubPut(data, sha) {
     const body = {
       message: `Update contacted: ${Object.keys(data).length} profiles`,
       content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
+      branch: DATA_BRANCH,
     };
     if (sha) body.sha = sha;
     const resp = await fetch(

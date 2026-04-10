@@ -80,6 +80,8 @@ body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f
 }
 .profile-card.contacted .badge-contacted { display: inline-block; }
 
+.btn-copy { font-size: 12px; padding: 5px 10px; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+
 .empty { text-align: center; padding: 40px; color: #8e8e8e; }
 
 .scroll-top {
@@ -2626,6 +2628,20 @@ function toggleContacted(username) {
   scheduleSyncToGithub();
 }
 
+function copyMessage(city, btn) {
+  const msg = `Hej\n\nWpisałem „trener personalny ${city}" i Cię tam nie ma, więc większość klientów trafia do innych trenerów.\n\nZ ciekawości zrobiłem przykład, jak mogłaby wyglądać strona nastawiona na pozyskiwanie takich klientów:\nhttps://personal-trainer-preview.netlify.app/\n\nMogę Ci pokazać, jak zacząć się tam wyświetlać i łapać więcej zapytań`;
+  navigator.clipboard.writeText(msg).then(() => {
+    btn.textContent = 'Skopiowano!';
+    btn.style.background = '#4caf50';
+    btn.style.color = 'white';
+    setTimeout(() => {
+      btn.textContent = 'Kopiuj';
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 1500);
+  });
+}
+
 function uncheckAll() {
   if (confirm('Odznacz wszystkie? Stracisz informacje o wyslanych wiadomosciach.')) {
     saveLocal({});
@@ -2717,6 +2733,7 @@ function render(scrollToFirst) {
         <div class="profile-meta">${p.city} &middot; ${p.region}</div>
       </div>
       ${isContacted ? `<span class="badge-contacted">Napisano</span>${byText ? `<span class="contacted-by">przez ${byText}</span>` : ''}` : ''}
+      <button class="btn btn-gray btn-copy" onclick="copyMessage('${p.city.replace(/'/g, "\\'")}', this)" title="Kopiuj wiadomosc do schowka">Kopiuj</button>
       <a href="${p.url}" target="_blank" class="btn btn-pink">Otworz IG</a>
     </div>`;
   }).join('');

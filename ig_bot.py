@@ -474,7 +474,15 @@ def main():
                         help=f"Ile wiadomości wysłać (domyślnie {DEFAULT_COUNT})")
     parser.add_argument("--delay", type=int, default=60,
                         help="Średni czas przerwy między wiadomościami (domyślnie 60s)")
+    parser.add_argument("--page", default="",
+                        help="Podstrona na Netlify (np. 'paznokcie'). Puste = strona główna.")
     args = parser.parse_args()
+
+    # Dostosuj URL do wybranej podstrony
+    global SITE_URL
+    if args.page:
+        SITE_URL = SITE_URL.rstrip("/") + "/" + args.page.strip("/")
+        print(f"🎯 Tryb: {args.page} ({SITE_URL})")
 
     with sync_playwright() as pw:
         send_messages(pw, args.count, args.delay)

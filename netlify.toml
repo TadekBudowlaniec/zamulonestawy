@@ -1,7 +1,11 @@
 [build]
   publish = "."
-  # Pomijaj build, jesli jedyna zmiana od ostatniego deployu to contacted.json
-  # (klient i tak czyta ten plik bezposrednio z GitHub API, nie z deployu).
-  # `git diff --quiet` zwraca 0 gdy brak roznic poza contacted.json -> Netlify
-  # interpretuje exit 0 jako "skip build". Nie-zero -> normalny build.
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!contacted.json'"
+  # Pomijaj build, jesli jedyna zmiana od ostatniego deployu to contacted*.json
+  # (klient i tak czyta te pliki bezposrednio z GitHub API, nie z deployu).
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!contacted.json' ':!contacted_paznokcie.json'"
+
+# Czyste URL-e bez .html
+[[redirects]]
+  from = "/paznokcie"
+  to = "/paznokcie.html"
+  status = 200

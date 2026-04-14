@@ -54,14 +54,30 @@ IG_SKIP_USERNAMES = {
     "web", "emails", "tags",
 }
 
-PROGRESS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "progress.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def load_done_cities() -> set[str]:
-    """Wczytuje miasta które już przeszukano (z progress.json)."""
-    if os.path.isfile(PROGRESS_FILE):
+def phrase_slug(phrase: str) -> str:
+    """Zamienia frazę na slug do nazw plików (np. 'trener personalny' -> 'trener_personalny')."""
+    s = phrase.strip().lower()
+    s = re.sub(r"[^a-z0-9]+", "_", s)
+    return s.strip("_") or "default"
+
+
+def progress_path(phrase: str) -> str:
+    return os.path.join(BASE_DIR, f"progress_{phrase_slug(phrase)}.json")
+
+
+# Zachowane dla wstecznej kompatybilności (trenerzy)
+PROGRESS_FILE = os.path.join(BASE_DIR, "progress.json")
+
+
+def load_done_cities(phrase: str = None) -> set[str]:
+    """Wczytuje miasta które już przeszukano dla danej frazy."""
+    path = progress_path(phrase) if phrase else PROGRESS_FILE
+    if os.path.isfile(path):
         try:
-            with open(PROGRESS_FILE, "r", encoding="utf-8") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             return set(data.get("done_cities", []))
         except Exception:
@@ -69,11 +85,12 @@ def load_done_cities() -> set[str]:
     return set()
 
 
-def save_done_city(city: str):
-    """Dodaje miasto do listy przeszukanych."""
-    done = load_done_cities()
+def save_done_city(city: str, phrase: str = None):
+    """Dodaje miasto do listy przeszukanych dla danej frazy."""
+    path = progress_path(phrase) if phrase else PROGRESS_FILE
+    done = load_done_cities(phrase)
     done.add(city)
-    with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump({"done_cities": sorted(done)}, f, ensure_ascii=False, indent=2)
 
 
@@ -93,10 +110,11 @@ def load_cities_from_html(path: str) -> set[str]:
         return set()
 
 
-def reset_progress():
-    """Resetuje postęp."""
-    if os.path.isfile(PROGRESS_FILE):
-        os.remove(PROGRESS_FILE)
+def reset_progress(phrase: str = None):
+    """Resetuje postęp dla danej frazy."""
+    path = progress_path(phrase) if phrase else PROGRESS_FILE
+    if os.path.isfile(path):
+        os.remove(path)
 
 
 @dataclass
@@ -431,7 +449,7 @@ class ScraperApp:
         sf.pack(fill=tk.X, padx=10, pady=(10, 5))
 
         ttk.Label(sf, text="Fraza:").grid(row=0, column=0, sticky=tk.W)
-        self.phrase_var = tk.StringVar(value="trener personalny")
+        self.phrase_var = tk.StringVar(value="paznokcie")
         ttk.Entry(sf, textvariable=self.phrase_var, width=35).grid(row=0, column=1, padx=5)
 
         ttk.Label(sf, text="Opóźnienie (s):").grid(row=0, column=2, padx=(15, 0))
@@ -564,8 +582,9 @@ class ScraperApp:
         else:
             regions = [r for r in SEO_REGIONS if r["name"] == sel]
 
-        # Wczytaj miasta do pominięcia (tylko z aktualnej sesji - progress.json)
-        skip_cities = load_done_cities()
+        # Wczytaj miasta do pominięcia dla aktualnej frazy
+        phrase = self.phrase_var.get()
+        skip_cities = load_done_cities(phrase)
 
         # Zbuduj listę miast (pomijając już przeszukane w tej sesji) i przemieszaj
         all_cities = [(c, r["name"]) for r in regions for c in r["cities"]]
@@ -612,8 +631,8 @@ class ScraperApp:
                             if self.scraper._is_blocked(html):
                                 self.scraper._wait_captcha(callback=self._log)
 
-                # Zapisz postęp - to miasto jest przeszukane
-                save_done_city(city)
+                # Zapisz postęp - to miasto jest przeszukane (per-fraza)
+                save_done_city(city, phrase)
 
                 # Pauza między miastami
                 if self.is_running and idx + 1 < total:
@@ -652,8 +671,9 @@ class ScraperApp:
         if not self.found_profiles:
             messagebox.showwarning("Brak", "Brak danych do eksportu.")
             return
+        slug = phrase_slug(self.phrase_var.get())
         path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")],
-                                            initialfile="ig_trenerzy.csv")
+                                            initialfile=f"ig_{slug}.csv")
         if not path:
             return
         with open(path, "w", newline="", encoding="utf-8-sig") as f:
@@ -687,8 +707,9 @@ class ScraperApp:
             return []
 
     def _export_html(self):
+        slug = phrase_slug(self.phrase_var.get())
         path = filedialog.asksaveasfilename(defaultextension=".html", filetypes=[("HTML", "*.html")],
-                                            initialfile="ig_trenerzy_rekordy.html")
+                                            initialfile=f"ig_{slug}_rekordy.html")
         if not path:
             return
 
@@ -776,13 +797,14 @@ document.addEventListener('DOMContentLoaded', function() {{
         messagebox.showinfo("OK", f"Zapisano {len(all_profiles)} profili ({new_count} nowych dopisanych).")
 
     def _reset_progress(self):
-        done = load_done_cities()
+        phrase = self.phrase_var.get()
+        done = load_done_cities(phrase)
         if not done:
-            messagebox.showinfo("Info", "Brak zapisanego postępu.")
+            messagebox.showinfo("Info", "Brak zapisanego postępu dla tej frazy.")
             return
-        if messagebox.askyesno("Reset", f"Usunąć postęp ({len(done)} miast)?\nScraper zacznie przeszukiwać od nowa."):
-            reset_progress()
-            self._log("STATUS", "Postęp zresetowany - wszystkie miasta będą przeszukane ponownie.")
+        if messagebox.askyesno("Reset", f"Usunąć postęp dla frazy '{phrase}' ({len(done)} miast)?\nScraper zacznie przeszukiwać od nowa."):
+            reset_progress(phrase)
+            self._log("STATUS", f"Postęp dla '{phrase}' zresetowany.")
 
     def _clear(self):
         self.found_profiles.clear()

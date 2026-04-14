@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paznokcie - Instagram</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #fafafa; color: #262626; }
+
+.header {
+  background: linear-gradient(135deg, #833AB4, #E1306C, #F77737);
+  color: white; padding: 24px 20px; text-align: center;
+}
+.header h1 { font-size: 24px; margin-bottom: 6px; }
+.header .stats { font-size: 14px; opacity: 0.9; }
+
+.controls {
+  background: white; padding: 12px 20px; border-bottom: 1px solid #dbdbdb;
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 10;
+}
+.controls input[type="text"] {
+  padding: 8px 12px; border: 1px solid #dbdbdb; border-radius: 6px;
+  font-size: 14px; flex: 1; min-width: 180px;
+}
+.controls select {
+  padding: 8px 12px; border: 1px solid #dbdbdb; border-radius: 6px;
+  font-size: 14px; background: white;
+}
+.controls .filter-info { font-size: 13px; color: #8e8e8e; }
+
+.btn {
+  padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px;
+  cursor: pointer; font-weight: 600;
+}
+.btn-pink { background: #E1306C; color: white; }
+.btn-pink:hover { background: #c91358; }
+.btn-gray { background: #efefef; color: #262626; }
+.btn-gray:hover { background: #dbdbdb; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 16px; }
+
+.profile-card {
+  background: white; border: 1px solid #dbdbdb; border-radius: 8px;
+  padding: 14px 16px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 14px;
+  transition: background 0.15s;
+}
+.profile-card:hover { background: #fafafa; }
+.ranking-bar { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.ranking-box {
+  background: white; border: 1px solid #dbdbdb; border-radius: 8px;
+  padding: 12px 16px; min-width: 260px; box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+.ranking-box h3 { margin: 0 0 8px 0; font-size: 14px; color: #262626; }
+.ranking-box ol { margin: 0; padding-left: 24px; }
+.ranking-box li { padding: 4px 0; font-size: 14px; color: #262626; }
+.ranking-box li .ru { font-weight: 600; }
+.ranking-box li .rc { color: #E1306C; font-weight: 700; margin-left: 6px; }
+.ranking-box .empty-rank { color: #8e8e8e; font-size: 13px; }
+
+.profile-card.contacted { background: #f0fff0; border-color: #b7e1b7; }
+
+.profile-card input[type="checkbox"] {
+  width: 20px; height: 20px; cursor: pointer; accent-color: #E1306C; flex-shrink: 0;
+}
+
+.profile-num { font-size: 12px; color: #8e8e8e; width: 28px; text-align: center; flex-shrink: 0; }
+
+.profile-info { flex: 1; min-width: 0; }
+.profile-username { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+.profile-username a { color: #E1306C; text-decoration: none; }
+.profile-username a:hover { text-decoration: underline; }
+.profile-meta { font-size: 13px; color: #8e8e8e; }
+
+.badge-contacted {
+  font-size: 11px; background: #4caf50; color: white; padding: 3px 8px;
+  border-radius: 10px; font-weight: 600; display: none;
+}
+.profile-card.contacted .badge-contacted { display: inline-block; }
+
+.btn-copy { font-size: 12px; padding: 5px 10px; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+
+.empty { text-align: center; padding: 40px; color: #8e8e8e; }
+
+.scroll-top {
+  position: fixed; bottom: 20px; right: 20px; width: 44px; height: 44px;
+  border-radius: 50%; background: #E1306C; color: white; border: none;
+  font-size: 20px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  z-index: 20;
+}
+.scroll-top:hover { background: #c91358; }
+
+.login-screen {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(135deg, #833AB4, #E1306C, #F77737);
+  display: flex; justify-content: center; align-items: center; z-index: 100;
+}
+.login-box {
+  background: white; border-radius: 16px; padding: 40px 50px; text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,.2);
+}
+.login-box h2 { font-size: 22px; margin-bottom: 8px; color: #262626; }
+.login-box p { font-size: 14px; color: #8e8e8e; margin-bottom: 24px; }
+.login-box .login-buttons { display: flex; flex-direction: column; gap: 10px; }
+.login-box .login-btn {
+  padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px;
+  font-weight: 600; cursor: pointer; transition: transform 0.1s, background 0.15s;
+}
+.login-box .login-btn:hover { transform: scale(1.03); }
+.login-box .login-btn:active { transform: scale(0.98); }
+.login-btn.alonso { background: #E1306C; color: white; }
+.login-btn.haku { background: #833AB4; color: white; }
+.login-btn.fred { background: #F77737; color: white; }
+.login-btn.ted { background: #405DE6; color: white; }
+
+.login-bar {
+  background: #e8f4fd; padding: 8px 20px; border-bottom: 1px solid #b3d9f2;
+  display: flex; align-items: center; gap: 10px; font-size: 13px;
+}
+.login-bar .user-badge {
+  background: #E1306C; color: white; padding: 4px 12px; border-radius: 12px;
+  font-weight: 600; font-size: 13px;
+}
+.contacted-by {
+  font-size: 11px; color: #666; font-style: italic;
+}
+
+.sync-bar {
+  background: #fff3cd; padding: 10px 20px; border-bottom: 1px solid #ffc107;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px;
+}
+.sync-bar.synced { background: #d4edda; border-color: #28a745; }
+.sync-bar input[type="password"] {
+  padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 280px;
+}
+.sync-status { font-weight: 600; }
+.sync-bar .hint { color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Paznokcie - Instagram</h1>
+  <div class="stats">
+    <span id="totalCount">0</span> profili |
+    Napisano: <span id="contactedCount">0</span> |
+    Pozostalo: <span id="remainingCount">0</span>
+  </div>
+  <div style="margin-top:8px;">
+    <a href="/" style="color:white; text-decoration:underline; font-size:14px;">← Trenerzy</a>
+  </div>
+  <div class="ranking-bar">
+    <button class="btn btn-pink" onclick="toggleRanking()">Ranking</button>
+    <div id="rankingBox" class="ranking-box" style="display:none;"></div>
+  </div>
+</div>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h2>Paznokcie</h2>
+    <p>Wybierz swoje konto</p>
+    <div class="login-buttons">
+      <button class="login-btn alonso" onclick="login('Alonso')">Alonso</button>
+      <button class="login-btn haku" onclick="login('Haku')">Haku</button>
+      <button class="login-btn fred" onclick="login('Fred')">Fred</button>
+      <button class="login-btn ted" onclick="login('Ted')">Ted</button>
+    </div>
+  </div>
+</div>
+
+<div class="login-bar" id="loginBar"></div>
+
+<div class="sync-bar" id="syncBar">
+  <span>Sync:</span>
+  <input type="password" id="tokenInput" placeholder="GitHub token (ghp_...)" />
+  <button class="btn btn-gray" onclick="saveToken()">Zapisz token</button>
+  <button class="btn btn-gray" onclick="syncFromGithub()">Pobierz z chmury</button>
+  <span class="sync-status" id="syncStatus">Brak tokenu - dane tylko lokalne</span>
+  <div class="hint">Token potrzebny do synchronizacji miedzy urzadzeniami. Wygeneruj na github.com/settings/tokens (scope: repo)</div>
+</div>
+
+<div class="controls">
+  <input type="text" id="searchInput" placeholder="Szukaj username lub miasto...">
+  <select id="regionFilter">
+    <option value="">Wszystkie wojewodztwa</option>
+  </select>
+  <select id="statusFilter">
+    <option value="">Wszystkie</option>
+    <option value="pending">Nienapisane</option>
+    <option value="contacted">Napisane</option>
+  </select>
+  <button class="btn btn-gray" onclick="uncheckAll()">Odznacz wszystko</button>
+  <span class="filter-info" id="filterInfo"></span>
+</div>
+
+<div class="container" id="profileList"></div>
+<button class="scroll-top" id="scrollTop" onclick="scrollToNextUnchecked()" title="Nastepny niezaznaczony">↓</button>
+
+<script>
+const PROFILES = [
+];
+
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const REPO_OWNER = 'TadekBudowlaniec';
+const REPO_NAME = 'zamulonestawy';
+const DATA_FILE = 'contacted_paznokcie.json';
+// Branch trzymajacy contacted.json - osobny od main, zeby Netlify nie buildowal
+// strony przy kazdym kliknieciu (Netlify pilnuje tylko main).
+const DATA_BRANCH = 'data';
+const LOCAL_KEY = 'ig_contacted';
+const TOKEN_KEY = 'ig_github_token';
+
+// ─── GITHUB SYNC ─────────────────────────────────────────────────────────────
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY) || '';
+}
+
+function saveToken() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token) { alert('Wpisz token!'); return; }
+  localStorage.setItem(TOKEN_KEY, token);
+  document.getElementById('tokenInput').value = '';
+  updateSyncStatus('Token zapisany! Kliknij "Pobierz z chmury" aby zsynchronizowac.');
+  syncFromGithub();
+}
+
+function updateSyncStatus(msg, ok) {
+  const el = document.getElementById('syncStatus');
+  el.textContent = msg;
+  document.getElementById('syncBar').className = ok ? 'sync-bar synced' : 'sync-bar';
+}
+
+async function githubGet() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const resp = await fetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}?ref=${DATA_BRANCH}`,
+      { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } }
+    );
+    if (resp.status === 404) return { data: {}, sha: null };
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+    const content = JSON.parse(atob(json.content));
+    return { data: content, sha: json.sha };
+  } catch (e) {
+    console.error('GitHub GET error:', e);
+    return null;
+  }
+}
+
+async function githubPut(data, sha) {
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const body = {
+      message: `Update contacted: ${Object.keys(data).length} profiles`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
+      branch: DATA_BRANCH,
+    };
+    if (sha) body.sha = sha;
+    const resp = await fetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+    currentSha = json.content.sha;
+    return true;
+  } catch (e) {
+    console.error('GitHub PUT error:', e);
+    return false;
+  }
+}
+
+let currentSha = null;
+let syncInProgress = false;
+
+async function syncFromGithub() {
+  const token = getToken();
+  if (!token) { updateSyncStatus('Brak tokenu - dane tylko lokalne'); return; }
+
+  updateSyncStatus('Pobieram z chmury...');
+  const result = await githubGet();
+  if (!result) {
+    updateSyncStatus('Blad polaczenia z GitHub! Sprawdz token.');
+    return;
+  }
+
+  currentSha = result.sha;
+  // Merge: GitHub + localStorage (GitHub wygrywa konflikty)
+  const local = getContacted();
+  const merged = { ...local, ...result.data };
+  saveLocal(merged);
+  updateSyncStatus(`Zsynchronizowano! (${Object.keys(merged).length} zaznaczonych)`, true);
+  render();
+}
+
+async function syncToGithub() {
+  if (syncInProgress || !getToken()) return;
+  syncInProgress = true;
+  updateSyncStatus('Zapisuje do chmury...');
+
+  const data = getContacted();
+
+  // Pobierz aktualny SHA (moglby sie zmienic z innego urzadzenia)
+  const current = await githubGet();
+  if (current) {
+    currentSha = current.sha;
+    // Merge z chmura zanim nadpiszemy
+    const merged = { ...current.data };
+    for (const [k, v] of Object.entries(data)) {
+      if (v) merged[k] = v;
+      else delete merged[k];
+    }
+    const ok = await githubPut(merged, currentSha);
+    if (ok) {
+      saveLocal(merged);
+      updateSyncStatus(`Zapisano! (${Object.keys(merged).length} zaznaczonych)`, true);
+    } else {
+      updateSyncStatus('Blad zapisu! Sprawdz token (potrzebuje scope: repo).');
+    }
+  } else {
+    updateSyncStatus('Blad polaczenia z GitHub!');
+  }
+  syncInProgress = false;
+}
+
+// ─── LOCAL STORAGE ───────────────────────────────────────────────────────────
+
+function getContacted() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveLocal(data) {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+}
+
+// Debounce sync - nie pushuj na GitHub przy kazdym kliknieciu
+let syncTimeout = null;
+function scheduleSyncToGithub() {
+  if (!getToken()) return;
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => syncToGithub(), 2000); // 2s po ostatnim kliknieciu
+}
+
+// ─── LOGIN ───────────────────────────────────────────────────────────────────
+
+const USER_KEY = 'ig_current_user';
+
+function getCurrentUser() {
+  return localStorage.getItem(USER_KEY) || '';
+}
+
+function login(name) {
+  localStorage.setItem(USER_KEY, name);
+  updateLoginUI();
+}
+
+function logout() {
+  localStorage.removeItem(USER_KEY);
+  updateLoginUI();
+}
+
+function updateLoginUI() {
+  const user = getCurrentUser();
+  const screen = document.getElementById('loginScreen');
+  const bar = document.getElementById('loginBar');
+
+  if (user) {
+    screen.style.display = 'none';
+    bar.innerHTML = `<span>Zalogowany jako:</span> <span class="user-badge">${user}</span> <button class="btn btn-gray" onclick="logout()">Wyloguj</button>`;
+  } else {
+    screen.style.display = 'flex';
+    bar.innerHTML = '';
+  }
+}
+
+// ─── TOGGLE ──────────────────────────────────────────────────────────────────
+
+function toggleContacted(username) {
+  const user = getCurrentUser();
+  if (!user) { alert('Zaloguj sie zeby zaznaczac profile!'); render(); return; }
+
+  const data = getContacted();
+  if (data[username]) delete data[username];
+  else data[username] = { by: user, at: Date.now() };
+  saveLocal(data);
+  render(false);
+  const contactedCount = Object.keys(data).length;
+  document.getElementById('contactedCount').textContent = contactedCount;
+  document.getElementById('remainingCount').textContent = PROFILES.length - contactedCount;
+  scheduleSyncToGithub();
+}
+
+function copyMessage(city, btn) {
+  const msg = `Hej\n\nWpisałem „paznokcie ${city}" i Cię tam nie ma, więc większość klientek trafia do innych stylistek.\n\nZ ciekawości zrobiłem przykład, jak mogłaby wyglądać strona nastawiona na pozyskiwanie takich klientek:\nhttps://paznokcie-preview.netlify.app/\n\nMogę Ci pokazać, jak zacząć się tam wyświetlać i łapać więcej zapytań`;
+  navigator.clipboard.writeText(msg).then(() => {
+    btn.textContent = 'Skopiowano!';
+    btn.style.background = '#4caf50';
+    btn.style.color = 'white';
+    setTimeout(() => {
+      btn.textContent = 'Kopiuj';
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 1500);
+  });
+}
+
+function uncheckAll() {
+  if (confirm('Odznacz wszystkie? Stracisz informacje o wyslanych wiadomosciach.')) {
+    saveLocal({});
+    render();
+    scheduleSyncToGithub();
+  }
+}
+
+function toggleRanking() {
+  const box = document.getElementById('rankingBox');
+  if (box.style.display === 'none') {
+    renderRanking();
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function renderRanking() {
+  const data = getContacted();
+  const counts = {};
+  for (const k in data) {
+    const by = (data[k] && data[k].by) ? data[k].by : '(nieznany)';
+    counts[by] = (counts[by] || 0) + 1;
+  }
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const box = document.getElementById('rankingBox');
+  if (sorted.length === 0) {
+    box.innerHTML = '<h3>Ranking - kto napisal do ilu trenerow</h3><div class="empty-rank">Jeszcze nikt nic nie zaznaczyl.</div>';
+    return;
+  }
+  const items = sorted.map(([by, n]) =>
+    `<li><span class="ru">${by}</span><span class="rc">${n}</span></li>`
+  ).join('');
+  box.innerHTML = `<h3>Ranking - kto napisal do ilu trenerow</h3><ol>${items}</ol>`;
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+
+let lastFiltered = [];
+
+function render(scrollToFirst) {
+  const contacted = getContacted();
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const region = document.getElementById('regionFilter').value;
+  const status = document.getElementById('statusFilter').value;
+
+  lastFiltered = PROFILES.filter(p => {
+    if (search && !p.username.includes(search) && !p.city.toLowerCase().includes(search)) return false;
+    if (region && p.region !== region) return false;
+    if (status === 'contacted' && !contacted[p.username]) return false;
+    if (status === 'pending' && contacted[p.username]) return false;
+    return true;
+  });
+
+  const contactedCount = Object.keys(contacted).length;
+  document.getElementById('contactedCount').textContent = contactedCount;
+  document.getElementById('remainingCount').textContent = PROFILES.length - contactedCount;
+  const rb = document.getElementById('rankingBox');
+  if (rb && rb.style.display !== 'none') renderRanking();
+  document.getElementById('filterInfo').textContent = lastFiltered.length < PROFILES.length
+    ? `Pokazano ${lastFiltered.length} z ${PROFILES.length}` : '';
+
+  const list = document.getElementById('profileList');
+  if (lastFiltered.length === 0) {
+    list.innerHTML = '<div class="empty">Brak profili pasujacych do filtrow</div>';
+    return;
+  }
+
+  let firstUncheckedId = null;
+
+  list.innerHTML = lastFiltered.map((p, i) => {
+    const num = i + 1;
+    const entry = contacted[p.username];
+    const isContacted = !!entry;
+    const byText = (entry && entry.by) ? entry.by : '';
+    const cardId = `card-${i}`;
+    if (!isContacted && !firstUncheckedId) firstUncheckedId = cardId;
+    return `
+    <div class="profile-card ${isContacted ? 'contacted' : ''}" id="${cardId}">
+      <input type="checkbox" ${isContacted ? 'checked' : ''}
+             onchange="toggleContacted('${p.username}')"
+             title="Zaznacz jesli napisales">
+      <span class="profile-num">${num}</span>
+      <div class="profile-info">
+        <div class="profile-username">
+          <a href="${p.url}" target="_blank">@${p.username}</a>
+        </div>
+        <div class="profile-meta">${p.city} &middot; ${p.region}</div>
+      </div>
+      ${isContacted ? `<span class="badge-contacted">Napisano</span>${byText ? `<span class="contacted-by">przez ${byText}</span>` : ''}` : ''}
+      <button class="btn btn-gray btn-copy" onclick="copyMessage('${p.city.replace(/'/g, "\\'")}', this)" title="Kopiuj wiadomosc do schowka">Kopiuj</button>
+      <a href="${p.url}" target="_blank" class="btn btn-pink">Otworz IG</a>
+    </div>`;
+  }).join('');
+
+  // Scrolluj do pierwszego niezaznaczonego
+  if (scrollToFirst && firstUncheckedId) {
+    setTimeout(() => {
+      const el = document.getElementById(firstUncheckedId);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }
+}
+
+function scrollToNextUnchecked() {
+  const contacted = getContacted();
+  for (let i = 0; i < lastFiltered.length; i++) {
+    if (!contacted[lastFiltered[i].username]) {
+      const el = document.getElementById(`card-${i}`);
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    }
+  }
+}
+
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+
+const regions = [...new Set(PROFILES.map(p => p.region))].sort();
+const select = document.getElementById('regionFilter');
+regions.forEach(r => {
+  const opt = document.createElement('option');
+  opt.value = r; opt.textContent = r;
+  select.appendChild(opt);
+});
+
+document.getElementById('searchInput').addEventListener('input', render);
+document.getElementById('regionFilter').addEventListener('change', render);
+document.getElementById('statusFilter').addEventListener('change', render);
+
+// Przy starcie
+updateLoginUI();
+render(true);
+if (getToken()) {
+  document.getElementById('tokenInput').placeholder = 'Token zapisany';
+  syncFromGithub();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Secrets
+.env
+
+# Browser profile (sesja IG)
+.ig_browser_profile/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug artifacts
+debug_*.html
+
+# Local data (opcjonalne — odkomentuj jeśli nie chcesz trzymać w repo)
+# contacted.json
+# progress.json

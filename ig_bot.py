@@ -172,19 +172,67 @@ def ensure_ig_session(page):
             return
 
 
+def click_login_as_ted(page):
+    """Klika przycisk logowania dla użytkownika 'Ted' na ekranie wyboru."""
+    # Szukaj wśród .login-btn tego z tekstem zawierającym 'ted'
+    btns = page.query_selector_all(".login-btn")
+    for btn in btns:
+        try:
+            txt = (btn.inner_text() or "").strip().lower()
+        except Exception:
+            continue
+        if "ted" in txt:
+            btn.click()
+            short_pause()
+            print("   Zalogowano na stronie jako Ted.")
+            return
+
+    # Fallback: dowolny klikalny element z tekstem 'ted'
+    for sel in [
+        "button:has-text('Ted')",
+        "button:has-text('ted')",
+        ":is(div, a)[role='button']:has-text('Ted')",
+    ]:
+        try:
+            el = page.wait_for_selector(sel, timeout=1500)
+            if el and el.is_visible():
+                el.click()
+                short_pause()
+                print("   Zalogowano na stronie jako Ted (fallback).")
+                return
+        except PwTimeout:
+            pass
+
+    print("   ⚠️  Nie znalazłem przycisku logowania 'Ted' — sprawdź stronę.")
+
+
+def install_clipboard_hook(page):
+    """Podmienia navigator.clipboard.writeText, żeby skopiowana wiadomość
+    trafiała do window.__lastCopied zamiast do systemowego schowka.
+    Dzięki temu kilka instancji bota nie podkrada sobie wzajemnie tekstu."""
+    page.evaluate("""() => {
+        if (window.__clipHookInstalled) return;
+        window.__clipHookInstalled = true;
+        window.__lastCopied = null;
+        const c = navigator.clipboard || {};
+        c.writeText = async (txt) => {
+            window.__lastCopied = txt;
+            return Promise.resolve();
+        };
+        navigator.clipboard = c;
+    }""")
+
+
 def setup_netlify(page):
     """Loguje na stronie Netlify, wpisuje token, ustawia filtr."""
     page.goto(SITE_URL, wait_until="networkidle")
     short_pause()
+    install_clipboard_hook(page)
 
-    # Zaloguj jako pierwszy user
+    # Zaloguj jako Ted
     login_screen = page.query_selector("#loginScreen")
     if login_screen and login_screen.is_visible():
-        login_btns = page.query_selector_all(".login-btn")
-        if login_btns:
-            login_btns[0].click()
-            short_pause()
-            print("   Zalogowano na stronie jako pierwszy user.")
+        click_login_as_ted(page)
 
     # Wpisz token GitHub i zsynchronizuj
     token_input = page.query_selector("#tokenInput")
@@ -206,16 +254,28 @@ def setup_netlify(page):
 
 
 def restore_netlify(page):
-    """Wraca na stronę Netlify i przywraca stan (login + filtr)."""
+    """Wraca na stronę Netlify i przywraca stan (login + token + filtr).
+    Wpisuje token za każdym razem, żeby wymusić świeżą synchronizację z GitHuba."""
     page.goto(SITE_URL, wait_until="networkidle")
     short_pause(2, 3)
+    install_clipboard_hook(page)
 
     login_screen = page.query_selector("#loginScreen")
     if login_screen and login_screen.is_visible():
-        login_btns = page.query_selector_all(".login-btn")
-        if login_btns:
-            login_btns[0].click()
-            short_pause()
+        click_login_as_ted(page)
+
+    # Wpisz token i wymuś synchronizację z GitHub
+    token_input = page.query_selector("#tokenInput")
+    if token_input:
+        token_input.fill("")
+        short_pause(0.3, 0.6)
+        token_input.fill(GITHUB_TOKEN)
+        short_pause(0.5, 1.0)
+        save_btn = page.query_selector("button:has-text('Zapisz token')")
+        if save_btn:
+            save_btn.click()
+            print("   🔄 Re-sync: token wpisany, pobieram świeże dane z GitHub...")
+            short_pause(4, 6)
 
     status_filter = page.query_selector("#statusFilter")
     if status_filter:
@@ -225,9 +285,9 @@ def restore_netlify(page):
 
 # ─── MAIN FLOW ───────────────────────────────────────────────────────────────
 
-def send_messages(pw, count, base_delay):
+def send_messages(pw, count, base_delay, target_index, profile_dir):
     ctx = pw.chromium.launch_persistent_context(
-        PROFILE_DIR,
+        profile_dir,
         headless=False,
         locale="pl-PL",
         viewport={"width": 1280, "height": 900},
@@ -251,18 +311,25 @@ def send_messages(pw, count, base_delay):
         for i in range(count):
             print(f"\n── Wiadomość {i + 1}/{count} ──")
 
-            # Znajdź pierwszy niezaznaczony profil
+            # Weź profil z konkretnego indeksu (z listy nienapisanych)
             cards = page.query_selector_all(".profile-card")
-            target_card = None
+            pending_cards = []
             for card in cards:
                 cb = card.query_selector("input[type='checkbox']")
                 if cb and not cb.is_checked():
-                    target_card = card
-                    break
+                    pending_cards.append(card)
 
-            if not target_card:
+            if not pending_cards:
                 print("⚠️  Brak niezaznaczonych profili — kończę.")
                 break
+
+            if target_index >= len(pending_cards):
+                print(f"⚠️  Indeks {target_index + 1} poza zakresem "
+                      f"(nienapisanych: {len(pending_cards)}) — kończę.")
+                break
+
+            target_card = pending_cards[target_index]
+            print(f"   🎯 Indeks {target_index + 1}/{len(pending_cards)}")
 
             username_el = target_card.query_selector(".profile-username a")
             username = username_el.inner_text() if username_el else "?"
@@ -278,10 +345,11 @@ def send_messages(pw, count, base_delay):
             copy_btn.click()
             short_pause(0.5, 1.0)
 
-            # Odczytaj ze schowka
-            message = page.evaluate("() => navigator.clipboard.readText()")
-            if not message or "trener personalny" not in message:
-                print("   ❌ Schowek pusty lub zła treść — pomijam.")
+            # Odczytaj wiadomość przechwyconą przez clipboard hook
+            # (omija systemowy schowek — bezpieczne dla wielu instancji)
+            message = page.evaluate("() => window.__lastCopied")
+            if not message or len(message) < 20:
+                print("   ❌ Schowek pusty lub za krótka treść — pomijam.")
                 continue
             print(f"   📋 Skopiowano wiadomość ({len(message)} znaków)")
 
@@ -420,10 +488,9 @@ def send_messages(pw, count, base_delay):
             textarea.click()
             short_pause(0.3, 0.6)
 
-            # Wklej całą wiadomość ze schowka (Ctrl+V) — bezpieczniej niż type()
-            page.evaluate("(txt) => navigator.clipboard.writeText(txt)", message)
-            short_pause(0.3, 0.5)
-            page.keyboard.press("Control+v")
+            # Wpisz wiadomość bez użycia systemowego schowka
+            # (insert_text emituje jeden event 'input', szybkie i bez kolizji)
+            page.keyboard.insert_text(message)
             short_pause(2, 3)
 
             # Wyślij
@@ -476,6 +543,13 @@ def main():
                         help="Średni czas przerwy między wiadomościami (domyślnie 60s)")
     parser.add_argument("--page", default="",
                         help="Podstrona na Netlify (np. 'paznokcie'). Puste = strona główna.")
+    parser.add_argument("--index", type=int, default=None,
+                        help="Indeks (od 1) profilu z listy nienapisanych. "
+                             "Jeśli nie podany — zapyta w konsoli.")
+    parser.add_argument("--profile", type=str, default=None,
+                        help="Numer/nazwa profilu przeglądarki "
+                             "(np. 1 -> .ig_browser_profile1). "
+                             "Jeśli nie podany — zapyta w konsoli.")
     args = parser.parse_args()
 
     # Dostosuj URL do wybranej podstrony
@@ -484,8 +558,38 @@ def main():
         SITE_URL = SITE_URL.rstrip("/") + "/" + args.page.strip("/")
         print(f"🎯 Tryb: {args.page} ({SITE_URL})")
 
+    if args.index is not None:
+        target_index = args.index - 1
+    else:
+        while True:
+            raw = input("Od którego indeksu (od 1) z nienapisanych zacząć? ").strip()
+            try:
+                target_index = int(raw) - 1
+                if target_index < 0:
+                    raise ValueError
+                break
+            except ValueError:
+                print("   ❌ Podaj liczbę całkowitą >= 1.")
+
+    if args.profile is not None:
+        profile_choice = args.profile.strip()
+    else:
+        profile_choice = input(
+            "Numer profilu przeglądarki (np. 1, 2, 3, 4) "
+            "lub Enter dla domyślnego: "
+        ).strip()
+
+    if profile_choice:
+        profile_dir = os.path.join(BASE_DIR, f".ig_browser_profile{profile_choice}")
+    else:
+        profile_dir = PROFILE_DIR
+
+    print(f"▶️  Bot będzie pisał do profilu o indeksie {target_index + 1} "
+          f"z listy nienapisanych (po każdym DM lista się odświeży).")
+    print(f"   📁 Profil przeglądarki: {profile_dir}")
+
     with sync_playwright() as pw:
-        send_messages(pw, args.count, args.delay)
+        send_messages(pw, args.count, args.delay, target_index, profile_dir)
 
 
 if __name__ == "__main__":

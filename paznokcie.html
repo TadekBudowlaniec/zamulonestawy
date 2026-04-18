@@ -5574,7 +5574,7 @@ function toggleContacted(username) {
 }
 
 function copyMessage(city, btn) {
-  const msg = `Hej\n\nWpisałem „paznokcie ${city}" i Cię tam nie ma, więc większość klientek trafia do innych stylistek.\n\nZ ciekawości zrobiłem przykład, jak mogłaby wyglądać strona nastawiona na pozyskiwanie takich klientek:\nhttps://paznokcie-preview.netlify.app/\n\nMogę Ci pokazać, jak zacząć się tam wyświetlać i łapać więcej zapytań`;
+  const msg = `Hej, wpisałem „paznokcie ${city}" i Cię tam nie ma czyli większość klientek trafia do innych stylistek.\n\nZrobiłem przykład jak mogłaby wyglądać Twoja strona: https://paznokcie-preview.netlify.app/\n\nDaj znać jeśli temat interesuje.`;
   navigator.clipboard.writeText(msg).then(() => {
     btn.textContent = 'Skopiowano!';
     btn.style.background = '#4caf50';

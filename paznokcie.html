@@ -5574,7 +5574,7 @@ function toggleContacted(username) {
 }
 
 function copyMessage(city, btn) {
-  const msg = `Hej, wpisałem „paznokcie ${city}" i Cię tam nie ma czyli większość klientek trafia do innych stylistek.\n\nZrobiłem przykład jak mogłaby wyglądać Twoja strona: https://paznokcie-preview.netlify.app/\n\nMam też gotowy panel gabinetu kosmetologicznego: https://gabinet-kosmetologiczny.netlify.app/\n\nDaj znać jeśli temat interesuje.`;
+  const msg = `Hej, wpisałem „paznokcie ${city}" i Cię tam nie ma — większość klientek trafia do innych stylistek.\n\nZrobiłem przykład jak mogłaby wyglądać Twoja strona: https://paznokcie-preview.netlify.app/\n\nDaj znać jeśli temat interesuje.`;
   navigator.clipboard.writeText(msg).then(() => {
     btn.textContent = 'Skopiowano!';
     btn.style.background = '#4caf50';

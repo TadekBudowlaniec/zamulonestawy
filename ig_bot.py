@@ -15,10 +15,13 @@ Użycie:
 """
 
 import argparse
+import json
 import os
 import random
 import sys
 import time
+import urllib.error
+import urllib.request
 
 from playwright.sync_api import sync_playwright, TimeoutError as PwTimeout
 
@@ -47,10 +50,14 @@ PROFILE_DIR = os.path.join(BASE_DIR, ".ig_browser_profile")
 DEFAULT_COUNT = 10
 MIN_DELAY = 45
 MAX_DELAY = 75
+ATTEMPTS_LIMIT = 3
 
 IG_USERNAME = os.environ.get("IG_USERNAME", "")
 IG_PASSWORD = os.environ.get("IG_PASSWORD", "")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 if not IG_USERNAME or not IG_PASSWORD or not GITHUB_TOKEN:
     sys.exit(
@@ -68,8 +75,80 @@ def random_delay(lo=MIN_DELAY, hi=MAX_DELAY):
     time.sleep(d)
 
 
-def short_pause(lo=1.5, hi=3.5):
+def short_pause(lo=1.0, hi=2.5):
     time.sleep(random.uniform(lo, hi))
+
+
+def _attempts_path(page_slug):
+    suffix = f"_{page_slug}" if page_slug else ""
+    return os.path.join(BASE_DIR, f"attempts{suffix}.json")
+
+
+def _read_attempts(page_slug):
+    p = _attempts_path(page_slug)
+    if not os.path.exists(p):
+        return {}
+    try:
+        with open(p, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _write_attempts(page_slug, data):
+    p = _attempts_path(page_slug)
+    tmp = p + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, p)
+    except Exception:
+        pass
+
+
+def bump_attempt(page_slug, username):
+    if not username or username == "?":
+        return 0
+    data = _read_attempts(page_slug)
+    n = data.get(username, 0) + 1
+    data[username] = n
+    _write_attempts(page_slug, data)
+    return n
+
+
+def clear_attempt(page_slug, username):
+    if not username or username == "?":
+        return
+    data = _read_attempts(page_slug)
+    if username in data:
+        del data[username]
+        _write_attempts(page_slug, data)
+
+
+def mark_profile_contacted(page, username):
+    """Klika checkbox profilu na liście, żeby wypadł z 'Nienapisane'."""
+    cards = page.query_selector_all(".profile-card")
+    for card in cards:
+        uname = card.query_selector(".profile-username a")
+        if uname and uname.inner_text() == username:
+            cb = card.query_selector("input[type='checkbox']")
+            if cb and not cb.is_checked():
+                cb.click()
+                short_pause(0.5, 1.0)
+                print(f"   🚫 Auto-odznaczono {username} (limit prób).")
+            return
+
+
+def handle_skip(page, page_slug, username, restore=False):
+    """Wspólna obsługa pominiętego profilu: bump licznika + auto-mark po limicie."""
+    if restore:
+        restore_netlify(page)
+    n = bump_attempt(page_slug, username)
+    if n >= ATTEMPTS_LIMIT:
+        print(f"   ⛔ Próba {n}/{ATTEMPTS_LIMIT} dla {username} — odznaczam.")
+        mark_profile_contacted(page, username)
+    elif n > 0:
+        print(f"   ↩️  Próba {n}/{ATTEMPTS_LIMIT} dla {username}.")
 
 
 def set_ig_cookies(ctx):
@@ -134,7 +213,7 @@ def ensure_ig_session(page):
     """Sprawdza sesję IG. Jeśli brak — otwiera IG i czeka na ręczne logowanie."""
     print("🌐 Sprawdzam sesję Instagram...")
     goto_ig(page, "https://www.instagram.com/")
-    short_pause(5, 8)
+    short_pause(3, 5)
     dismiss_ig_popups(page)
 
     if is_logged_in_ig(page):
@@ -152,7 +231,7 @@ def ensure_ig_session(page):
     print()
 
     goto_ig(page, "https://www.instagram.com/accounts/login/")
-    short_pause(3, 5)
+    short_pause(2, 3)
     dismiss_ig_popups(page)
 
     # Czekaj bez limitu aż user się zaloguje
@@ -164,9 +243,9 @@ def ensure_ig_session(page):
         except Exception:
             continue
         if "/accounts/login" not in url and "/accounts/signup" not in url:
-            short_pause(3, 5)
-            dismiss_ig_popups(page)
             short_pause(2, 3)
+            dismiss_ig_popups(page)
+            short_pause(1, 2)
             dismiss_ig_popups(page)
             print("✅ Zalogowano na Instagram! Kontynuuję...")
             return
@@ -238,18 +317,18 @@ def setup_netlify(page):
     token_input = page.query_selector("#tokenInput")
     if token_input:
         token_input.fill(GITHUB_TOKEN)
-        short_pause(0.5, 1.0)
+        short_pause(0.3, 0.7)
         save_btn = page.query_selector("button:has-text('Zapisz token')")
         if save_btn:
             save_btn.click()
             print("   🔑 Token GitHub zapisany, synchronizacja...")
-            short_pause(4, 6)
+            short_pause(2.5, 4)
 
     # Ustaw filtr na "Nienapisane"
     status_filter = page.query_selector("#statusFilter")
     if status_filter:
         status_filter.select_option("pending")
-        short_pause(1, 2)
+        short_pause(0.5, 1.0)
         print("   🔍 Filtr: tylko nienapisane profile.")
 
 
@@ -257,7 +336,7 @@ def restore_netlify(page):
     """Wraca na stronę Netlify i przywraca stan (login + token + filtr).
     Wpisuje token za każdym razem, żeby wymusić świeżą synchronizację z GitHuba."""
     page.goto(SITE_URL, wait_until="networkidle")
-    short_pause(2, 3)
+    short_pause(1.2, 2.0)
     install_clipboard_hook(page)
 
     login_screen = page.query_selector("#loginScreen")
@@ -268,24 +347,154 @@ def restore_netlify(page):
     token_input = page.query_selector("#tokenInput")
     if token_input:
         token_input.fill("")
-        short_pause(0.3, 0.6)
+        short_pause(0.2, 0.4)
         token_input.fill(GITHUB_TOKEN)
-        short_pause(0.5, 1.0)
+        short_pause(0.3, 0.7)
         save_btn = page.query_selector("button:has-text('Zapisz token')")
         if save_btn:
             save_btn.click()
             print("   🔄 Re-sync: token wpisany, pobieram świeże dane z GitHub...")
-            short_pause(4, 6)
+            short_pause(2.5, 4)
 
     status_filter = page.query_selector("#statusFilter")
     if status_filter:
         status_filter.select_option("pending")
-        short_pause(0.5, 1.0)
+        short_pause(0.3, 0.7)
+
+
+# ─── AI (GROQ) ───────────────────────────────────────────────────────────────
+
+def extract_ig_context(page):
+    """Wyciąga bio i alt-opisy 3 pierwszych postów z otwartego profilu IG."""
+    try:
+        data = page.evaluate("""() => {
+            const out = { bio: '', posts: [] };
+            // Bio: meta og:description jest najstabilniejsze
+            const meta = document.querySelector("meta[property='og:description']");
+            if (meta) {
+                const c = (meta.getAttribute('content') || '').trim();
+                // og:description ma format: "123 Followers, 45 Following, 6 Posts - @user on Instagram: \\"bio\\""
+                const m = c.match(/Instagram[^:]*:\\s*[\\"'\\u201c\\u201d](.+?)[\\"'\\u201c\\u201d]\\s*$/);
+                out.bio = m ? m[1].trim() : c;
+            }
+            // Fallback — tekst z sekcji header
+            if (!out.bio) {
+                const header = document.querySelector('header section');
+                if (header) {
+                    const txt = (header.innerText || '').trim();
+                    const lines = txt.split('\\n').map(s => s.trim()).filter(Boolean);
+                    for (const l of lines) {
+                        if (l.length > 20 && l.length < 400 &&
+                            !/^(obserwuj|follow|message|wyślij|wiadomo|posty|obserwuj[a-ząćęłńóśźż]+|\\d)/i.test(l)) {
+                            out.bio = l; break;
+                        }
+                    }
+                }
+            }
+            // Alty pierwszych postów
+            const imgs = document.querySelectorAll("a[href*='/p/'] img, a[href*='/reel/'] img");
+            const seen = new Set();
+            for (const img of imgs) {
+                const a = (img.getAttribute('alt') || '').trim();
+                if (a && !seen.has(a)) { seen.add(a); out.posts.push(a); }
+                if (out.posts.length >= 3) break;
+            }
+            return out;
+        }""")
+        return data or {"bio": "", "posts": []}
+    except Exception as e:
+        print(f"   ⚠️  Nie udało się wyciągnąć kontekstu IG: {e}")
+        return {"bio": "", "posts": []}
+
+
+def generate_message_with_groq(city, ctx, fallback):
+    """Woła Groq API i zwraca spersonalizowaną wiadomość; fallback przy błędzie."""
+    if not GROQ_API_KEY:
+        return fallback
+
+    bio = (ctx.get("bio") or "").strip()[:500]
+    posts = [p[:200] for p in (ctx.get("posts") or [])][:3]
+
+    if not bio and not posts:
+        return fallback
+
+    system_prompt = (
+        "Jesteś handlowcem oferującym strony internetowe dla stylistek paznokci. "
+        "Piszesz krótkie, naturalne DM-y po polsku, bez formalnych zwrotów i emoji. "
+        "Maks. 3–4 zdania. Nawiąż do konkretu z profilu (bio lub posty), potem "
+        "napisz że po wpisaniu 'paznokcie [miasto]' w Google nie ma jej tam i większość "
+        "klientek trafia do innych stylistek. Wspomnij przykład strony: "
+        "https://paznokcie-preview.netlify.app/ . Zakończ zdaniem: "
+        "'Daj znać jeśli temat interesuje.'"
+    )
+    user_prompt = (
+        f"Miasto: {city}\n"
+        f"Bio: {bio or '(puste)'}\n"
+        f"Ostatnie posty (alt-opisy zdjęć): {' | '.join(posts) if posts else '(brak)'}\n\n"
+        "Napisz DM."
+    )
+
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        "temperature": 0.8,
+        "max_tokens": 350,
+    }
+
+    try:
+        req = urllib.request.Request(
+            GROQ_URL,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+                "User-Agent": "ig-bot/1.0",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+        msg = (body["choices"][0]["message"]["content"] or "").strip()
+        # Usuń ewentualne cudzysłowy otaczające
+        if len(msg) >= 2 and msg[0] in "\"'“”„" and msg[-1] in "\"'“”„":
+            msg = msg[1:-1].strip()
+        if len(msg) < 40:
+            print("   ⚠️  Groq zwrócił za krótką wiadomość — używam szablonu")
+            return fallback
+        return msg
+    except urllib.error.HTTPError as e:
+        try:
+            err_body = e.read().decode("utf-8")
+        except Exception:
+            err_body = ""
+        print(f"   ⚠️  Groq HTTP {e.code}: {err_body[:200]} — używam szablonu")
+        return fallback
+    except Exception as e:
+        print(f"   ⚠️  Groq API błąd: {e} — używam szablonu")
+        return fallback
+
+
+def log_ai_message(username, city, ctx, message):
+    """Zapisuje wygenerowaną wiadomość do pliku do późniejszego przeglądu."""
+    try:
+        path = os.path.join(BASE_DIR, "ai_messages.log")
+        with open(path, "a", encoding="utf-8") as f:
+            f.write("\n" + "=" * 60 + "\n")
+            f.write(f"@{username} ({city}) — {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Bio: {(ctx.get('bio') or '')[:250]}\n")
+            f.write(f"Posty: {ctx.get('posts') or []}\n")
+            f.write("---\n")
+            f.write(message + "\n")
+    except Exception:
+        pass
 
 
 # ─── MAIN FLOW ───────────────────────────────────────────────────────────────
 
-def send_messages(pw, count, base_delay, target_index, profile_dir):
+def send_messages(pw, count, base_delay, target_index, profile_dir, use_ai=False, page_slug=""):
     ctx = pw.chromium.launch_persistent_context(
         profile_dir,
         headless=False,
@@ -341,15 +550,17 @@ def send_messages(pw, count, base_delay, target_index, profile_dir):
             copy_btn = target_card.query_selector(".btn-copy")
             if not copy_btn:
                 print("   ❌ Brak przycisku Kopiuj — pomijam.")
+                handle_skip(page, page_slug, username)
                 continue
             copy_btn.click()
-            short_pause(0.5, 1.0)
+            short_pause(0.4, 0.8)
 
             # Odczytaj wiadomość przechwyconą przez clipboard hook
             # (omija systemowy schowek — bezpieczne dla wielu instancji)
             message = page.evaluate("() => window.__lastCopied")
             if not message or len(message) < 20:
                 print("   ❌ Schowek pusty lub za krótka treść — pomijam.")
+                handle_skip(page, page_slug, username)
                 continue
             print(f"   📋 Skopiowano wiadomość ({len(message)} znaków)")
 
@@ -358,10 +569,11 @@ def send_messages(pw, count, base_delay, target_index, profile_dir):
             ig_url = ig_link.get_attribute("href") if ig_link else None
             if not ig_url:
                 print("   ❌ Brak linku IG — pomijam.")
+                handle_skip(page, page_slug, username)
                 continue
 
             goto_ig(page, ig_url)
-            short_pause(5, 8)
+            short_pause(3, 5)
             dismiss_ig_popups(page)
 
             # Sprawdź czy sesja wygasła
@@ -369,7 +581,20 @@ def send_messages(pw, count, base_delay, target_index, profile_dir):
                 print("   ⚠️  Sesja IG wygasła!")
                 ensure_ig_session(page)
                 goto_ig(page, ig_url)
-                short_pause(5, 8)
+                short_pause(3, 5)
+
+            # Opcjonalnie: wygeneruj spersonalizowaną wiadomość przez Groq
+            if use_ai:
+                ctx_data = extract_ig_context(page)
+                preview = (ctx_data.get("bio") or "")[:80]
+                print(f"   🧠 Bio: {preview!r} | posty: {len(ctx_data.get('posts', []))}")
+                ai_message = generate_message_with_groq(city, ctx_data, message)
+                if ai_message != message:
+                    print(f"   ✨ Groq: wygenerowano wiadomość ({len(ai_message)} znaków)")
+                    log_ai_message(username, city, ctx_data, ai_message)
+                    message = ai_message
+                else:
+                    print("   ↩️  Fallback na szablon")
 
             # Zaobserwuj profil jeśli jeszcze nie obserwujesz
             follow_btn = None
@@ -413,7 +638,7 @@ def send_messages(pw, count, base_delay, target_index, profile_dir):
             if follow_btn:
                 follow_btn.click()
                 print("   ➕ Zaobserwowano profil")
-                short_pause(2, 4)
+                short_pause(1.2, 2.2)
             else:
                 print("   ✔️  Już obserwujesz")
 
@@ -458,11 +683,11 @@ def send_messages(pw, count, base_delay, target_index, profile_dir):
 
             if not msg_btn:
                 print("   ❌ Nie znalazłem 'Wyślij wiadomość' — pomijam.")
-                restore_netlify(page)
+                handle_skip(page, page_slug, username, restore=True)
                 continue
 
             msg_btn.click()
-            short_pause(3, 5)
+            short_pause(2, 3)
 
             # Pole tekstowe w DM
             textarea = None
@@ -482,7 +707,7 @@ def send_messages(pw, count, base_delay, target_index, profile_dir):
 
             if not textarea:
                 print("   ❌ Nie znalazłem pola wiadomości — pomijam.")
-                restore_netlify(page)
+                handle_skip(page, page_slug, username, restore=True)
                 continue
 
             textarea.click()
@@ -491,7 +716,7 @@ def send_messages(pw, count, base_delay, target_index, profile_dir):
             # Wpisz wiadomość bez użycia systemowego schowka
             # (insert_text emituje jeden event 'input', szybkie i bez kolizji)
             page.keyboard.insert_text(message)
-            short_pause(2, 3)
+            short_pause(1.2, 2.0)
 
             # Wyślij
             send_btn = page.query_selector("button:has-text('Wyślij')") or \
@@ -501,9 +726,10 @@ def send_messages(pw, count, base_delay, target_index, profile_dir):
             else:
                 page.keyboard.press("Enter")
 
-            short_pause(2, 3)
+            short_pause(1.2, 2.0)
             sent += 1
             print(f"   ✅ Wysłano! ({sent}/{count})")
+            clear_attempt(page_slug, username)
 
             # Wróć na Netlify i zaznacz checkbox
             restore_netlify(page)
@@ -515,7 +741,7 @@ def send_messages(pw, count, base_delay, target_index, profile_dir):
                     cb = card.query_selector("input[type='checkbox']")
                     if cb and not cb.is_checked():
                         cb.click()
-                        short_pause(1, 2)
+                        short_pause(0.5, 1.0)
                         print(f"   ☑️  Zaznaczono {username}")
                     break
 
@@ -536,6 +762,7 @@ def send_messages(pw, count, base_delay, target_index, profile_dir):
 
 
 def main():
+    global SITE_URL, GROQ_MODEL
     parser = argparse.ArgumentParser(description="IG DM Bot")
     parser.add_argument("--count", type=int, default=DEFAULT_COUNT,
                         help=f"Ile wiadomości wysłać (domyślnie {DEFAULT_COUNT})")
@@ -550,10 +777,19 @@ def main():
                         help="Numer/nazwa profilu przeglądarki "
                              "(np. 1 -> .ig_browser_profile1). "
                              "Jeśli nie podany — zapyta w konsoli.")
+    parser.add_argument("--ai", action="store_true",
+                        help="Generuj spersonalizowane wiadomości przez Groq API "
+                             "na podstawie bio i postów (wymaga GROQ_API_KEY w .env).")
+    parser.add_argument("--groq-model", type=str, default=None,
+                        help=f"Model Groq (domyślnie {GROQ_MODEL}).")
     args = parser.parse_args()
 
+    if args.ai and not GROQ_API_KEY:
+        sys.exit("❌ --ai wymaga GROQ_API_KEY w .env (https://console.groq.com/keys)")
+    if args.groq_model:
+        GROQ_MODEL = args.groq_model
+
     # Dostosuj URL do wybranej podstrony
-    global SITE_URL
     if args.page:
         SITE_URL = SITE_URL.rstrip("/") + "/" + args.page.strip("/")
         print(f"🎯 Tryb: {args.page} ({SITE_URL})")
@@ -587,9 +823,12 @@ def main():
     print(f"▶️  Bot będzie pisał do profilu o indeksie {target_index + 1} "
           f"z listy nienapisanych (po każdym DM lista się odświeży).")
     print(f"   📁 Profil przeglądarki: {profile_dir}")
+    if args.ai:
+        print(f"   🧠 AI: Groq ({GROQ_MODEL}) — spersonalizowane wiadomości")
 
     with sync_playwright() as pw:
-        send_messages(pw, args.count, args.delay, target_index, profile_dir)
+        send_messages(pw, args.count, args.delay, target_index, profile_dir,
+                      use_ai=args.ai, page_slug=(args.page or "").strip("/"))
 
 
 if __name__ == "__main__":
